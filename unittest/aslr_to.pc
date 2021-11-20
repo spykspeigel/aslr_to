@@ -1,0 +1,22 @@
+prefix=/usr/local
+exec_prefix=/usr/local
+libdir=/usr/local/lib
+bindir=/usr/local/bin
+pkglibdir=/usr/local/lib/aslr_to
+includedir=/usr/local/include
+datarootdir=/usr/local/share
+pkgdatarootdir=/usr/local/share
+docdir=/usr/local/share/doc/aslr_to
+doxygendocdir=/usr/local/share/doc/aslr_to/doxygen-html
+
+Name: aslr_to
+Description: 
+URL: https://github.com/spykspeigel/aslr_to
+Version: 0.0.0
+Requires: example-robot-data >= 3.8.0
+Conflicts: 
+Libs: -L${libdir} 
+Libs.private: 
+Cflags:  -I${includedir}
+
+
