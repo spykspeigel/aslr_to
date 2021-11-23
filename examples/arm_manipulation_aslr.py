@@ -23,32 +23,36 @@ nu = actuation.nu
 runningCostModel = crocoddyl.CostModelSum(state,nu)
 terminalCostModel = crocoddyl.CostModelSum(state,nu)
 
-framePlacementResidual = aslr_to.ResidualModelFramePlacementASR(state, robot_model.getFrameId("gripper_left_joint"),
-                                                               pinocchio.SE3(np.eye(3), np.array([.0, .0, .4])), nu)
+xActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e-1] * 7 + [1e1] * 7 + [1e-2] * robot_model.nv+[1e1]* robot_model.nv))
+xResidual = crocoddyl.ResidualModelState(state, state.zero(), nu)
+xRegCost = crocoddyl.CostModelResidual(state, xActivation, xResidual)
 uResidual = crocoddyl.ResidualModelControl(state, nu)
-xResidual = crocoddyl.ResidualModelControl(state, nu)
-goalTrackingCost = crocoddyl.CostModelResidual(state, framePlacementResidual)
-xRegCost = crocoddyl.CostModelResidual(state, xResidual)
 uRegCost = crocoddyl.CostModelResidual(state, uResidual)
 
+framePlacementResidual = aslr_to.ResidualModelFramePlacementASR(state, robot_model.getFrameId("gripper_left_joint"),
+                                                               pinocchio.SE3(np.eye(3), np.array([.0, .0, .4])), nu)
+goalTrackingCost = crocoddyl.CostModelResidual(state, framePlacementResidual)
+#xRegCost = crocoddyl.CostModelResidual(state, xResidual)
+
 # Then let's added the running and terminal cost functions
-runningCostModel.addCost("gripperPose", goalTrackingCost, 1e2)
+runningCostModel.addCost("gripperPose", goalTrackingCost, 1e1)
 runningCostModel.addCost("xReg", xRegCost, 1e-3)
 runningCostModel.addCost("uReg", uRegCost, 1e-4)
-terminalCostModel.addCost("gripperPose", goalTrackingCost, 1e6)
+terminalCostModel.addCost("gripperPose", goalTrackingCost, 1e3)
 
 
-dt = 1e-3
+dt = 1e-2
 runningModel = aslr_to.IntegratedActionModelEulerASR(
     aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, runningCostModel), dt)
-runningModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
+#runningModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
 terminalModel = aslr_to.IntegratedActionModelEulerASR(
-    aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, terminalCostModel), 0.)
-terminalModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
+    aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, terminalCostModel), dt)
+#terminalModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
 
-T = 250
+T = 100
+
 q0 = np.array([0.173046, 1., -0.52366, 0., 0., 0.1, -0.005])
-x0 = np.concatenate([q0, q0,pinocchio.utils.zero(state.nv)])
+x0 = np.concatenate([q0, np.zeros(7),pinocchio.utils.zero(state.nv)])
 print(x0.shape)
 problem = crocoddyl.ShootingProblem(x0, [runningModel] * T, terminalModel)
 
