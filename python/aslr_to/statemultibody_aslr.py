@@ -4,6 +4,12 @@ import crocoddyl
 import scipy.linalg as scl
 
 
+#   state class for soft actuated robots. x = [q_l,q_m,v_l,v_m] . 
+#   q_l : configuration vector of link side
+#   q_m : configuration vector of motor side
+#   v_l : q_dot of link side 
+#   v_m : \theta_dot of the motor side
+
 class StateMultibodyASLR(crocoddyl.StateAbstract):
     def __init__(self, pinocchioModel):
         crocoddyl.StateAbstract.__init__(self, 2*(pinocchioModel.nq + pinocchioModel.nv), 4 * pinocchioModel.nv)

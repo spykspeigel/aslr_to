@@ -4,6 +4,9 @@ SET(${PROJECT_NAME}_PYTHON_FILES
   contact_fwddyn.py
   statemultibody_aslr.py
   actuation_aslr.py
+  residual_frame_placement.py
+  solver.py
+  integrated_action.py
   )
 
 FOREACH(python ${${PROJECT_NAME}_PYTHON_FILES})

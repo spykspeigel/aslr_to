@@ -12,7 +12,7 @@ class DifferentialFreeASLRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbst
 
     def calc(self, data, x, u=None):
         if u is None:
-            u = self.unone
+            u = np.zeros(self.nu)
         nq=self.state.nq
         nv=self.state.nv
         q_l = x[:int(nq/2)]
@@ -26,7 +26,7 @@ class DifferentialFreeASLRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbst
 
         data.tau_couple = np.dot(data.K, q_l-q_m)
 
-        # Computing the dynamics using ABA or manually for armature case
+        # Computing the fwd dynamics manually
         pinocchio.computeAllTerms(self.state.pinocchio, data.pinocchio, q_l, v_l)
         data.M = data.pinocchio.M
         data.Minv = np.linalg.inv(data.M)
@@ -59,6 +59,7 @@ class DifferentialFreeASLRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbst
         # Computing the actuation derivatives
         self.actuation.calcDiff(data.actuation, x_m, u)
         tau = data.actuation.tau
+        
         # Computing the dynamics derivatives
         pinocchio.computeRNEADerivatives(self.state.pinocchio, data.pinocchio, q_l, v_l, data.xout[:int(nv/2)])
         ddq_dq = np.dot(data.Minv, ( - data.pinocchio.dtau_dq - data.K))
@@ -73,6 +74,7 @@ class DifferentialFreeASLRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbst
 
         # Computing the cost derivatives
         self.costs.calcDiff(data.costs, x, u)
+
 
     def createData(self):
         data = DifferentialFreeASLRFwdDynamicsData(self)
