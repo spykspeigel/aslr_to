@@ -2,11 +2,9 @@ import sys
 import unittest
 
 import crocoddyl
-import pinocchio
 import example_robot_data
 import numpy as np
-import inv_dyn
-from python import aslr_to
+import aslr_to
 from test_utils_ex import NUMDIFF_MODIFIER, assertNumDiff
 
 

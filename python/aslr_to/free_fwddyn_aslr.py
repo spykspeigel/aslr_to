@@ -34,7 +34,7 @@ class DifferentialFreeASLRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbst
         data.xout[:int(nv/2)] = np.dot(data.Minv, (tau[:int(nv/2)] - data.pinocchio.nle - data.tau_couple))
 
         # Computing the motor side dynamics
-        data.xout[int(nv/2):] = np.dot(data.Binv, tau[int(nv/2):] - data.tau_couple)
+        data.xout[int(nv/2):] = np.dot(data.Binv, tau[int(nv/2):] + data.tau_couple)
 
         # Computing the cost value and residuals
         pinocchio.forwardKinematics(self.state.pinocchio, data.pinocchio, q_l, v_l)
@@ -67,8 +67,8 @@ class DifferentialFreeASLRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbst
         data.Fx[:int(nv/2) , :int(nv/2)] = ddq_dq
         data.Fx[:int(nv/2), int(nv/2):nv] = np.dot(data.Minv,data.K)
         data.Fx[:int(nv/2), nv:-int(nv/2)] = ddq_dv
-        data.Fx[int(nv/2):, :int(nv/2)] = -np.dot(data.Binv,data.K)
-        data.Fx[int(nv/2):, int(nv/2):nv] = np.dot(data.Binv,data.K)
+        data.Fx[int(nv/2):, :int(nv/2)] = np.dot(data.Binv,data.K)
+        data.Fx[int(nv/2):, int(nv/2):nv] = -np.dot(data.Binv,data.K)
         
         data.Fu[int(nv/2):, :] = data.Binv
 

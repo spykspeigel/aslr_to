@@ -4,10 +4,7 @@ import crocoddyl
 
 class ResidualModelFramePlacementASLR(crocoddyl.ResidualModelAbstract):
     def __init__(self, state, frame_id=None, placement=None, nu=None):
-        activation = crocoddyl.ActivationModelQuad(6)
-
         crocoddyl.ResidualModelAbstract.__init__(self, state, 6, nu,True, False, False)
-
         self._frame_id = frame_id
         self._placement = placement
 
