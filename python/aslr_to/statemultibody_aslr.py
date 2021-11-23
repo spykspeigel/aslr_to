@@ -10,7 +10,7 @@ import scipy.linalg as scl
 #   v_l : q_dot of link side 
 #   v_m : \theta_dot of the motor side
 
-class StateMultibodyASLR(crocoddyl.StateAbstract):
+class StateMultibodyASR(crocoddyl.StateAbstract):
     def __init__(self, pinocchioModel):
         crocoddyl.StateAbstract.__init__(self, 2*(pinocchioModel.nq + pinocchioModel.nv), 4 * pinocchioModel.nv)
         self.pinocchio = pinocchioModel

@@ -15,15 +15,15 @@ WITHPLOT = 'plot' in sys.argv or 'CROCODDYL_PLOT' in os.environ
 
 talos_arm = example_robot_data.load('talos_arm')
 robot_model = talos_arm.model
-state = aslr_to.StateMultibodyASLR(robot_model)
-actuation = aslr_to.ASLRActuation(state)
+state = aslr_to.StateMultibodyASR(robot_model)
+actuation = aslr_to.ASRActuation(state)
 
 nu = actuation.nu
 
 runningCostModel = crocoddyl.CostModelSum(state,nu)
 terminalCostModel = crocoddyl.CostModelSum(state,nu)
 
-framePlacementResidual = aslr_to.ResidualModelFramePlacementASLR(state, robot_model.getFrameId("gripper_left_joint"),
+framePlacementResidual = aslr_to.ResidualModelFramePlacementASR(state, robot_model.getFrameId("gripper_left_joint"),
                                                                pinocchio.SE3(np.eye(3), np.array([.0, .0, .4])), nu)
 uResidual = crocoddyl.ResidualModelControl(state, nu)
 xResidual = crocoddyl.ResidualModelControl(state, nu)
@@ -39,11 +39,11 @@ terminalCostModel.addCost("gripperPose", goalTrackingCost, 1e6)
 
 
 dt = 1e-3
-runningModel = aslr_to.IntegratedActionModelEulerASLR(
-    aslr_to.DifferentialFreeASLRFwdDynamicsModel(state, actuation, runningCostModel), dt)
+runningModel = aslr_to.IntegratedActionModelEulerASR(
+    aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, runningCostModel), dt)
 runningModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
-terminalModel = aslr_to.IntegratedActionModelEulerASLR(
-    aslr_to.DifferentialFreeASLRFwdDynamicsModel(state, actuation, terminalCostModel), 0.)
+terminalModel = aslr_to.IntegratedActionModelEulerASR(
+    aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, terminalCostModel), 0.)
 terminalModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
 
 T = 250

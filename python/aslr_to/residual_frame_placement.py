@@ -2,7 +2,7 @@ import numpy as np
 import pinocchio
 import crocoddyl
 
-class ResidualModelFramePlacementASLR(crocoddyl.ResidualModelAbstract):
+class ResidualModelFramePlacementASR(crocoddyl.ResidualModelAbstract):
     def __init__(self, state, frame_id=None, placement=None, nu=None):
         crocoddyl.ResidualModelAbstract.__init__(self, state, 6, nu,True, False, False)
         self._frame_id = frame_id
@@ -22,11 +22,11 @@ class ResidualModelFramePlacementASLR(crocoddyl.ResidualModelAbstract):
         data.Rx[:,:int(self.state.nq/2)] = data.J
 
     def createData(self, collector):
-        data = ResidualDataFramePlacementASLR(self, collector)
+        data = ResidualDataFramePlacementASR(self, collector)
         return data
 
 
-class ResidualDataFramePlacementASLR(crocoddyl.ResidualDataAbstract):
+class ResidualDataFramePlacementASR(crocoddyl.ResidualDataAbstract):
     def __init__(self, model, collector):
         crocoddyl.ResidualDataAbstract.__init__(self, model, collector)
         self.rMf = pinocchio.SE3.Identity()

@@ -2,7 +2,7 @@ import numpy as np
 import pinocchio
 import crocoddyl
 
-class ASLRActuation(crocoddyl.ActuationModelAbstract):
+class ASRActuation(crocoddyl.ActuationModelAbstract):
     def __init__(self, state):
         crocoddyl.ActuationModelAbstract.__init__(self, state, int(state.nv/2))
 

@@ -3,7 +3,7 @@ import pinocchio
 import crocoddyl
 
 
-class DifferentialFreeASLRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbstract):
+class DifferentialFreeASRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbstract):
     def __init__(self, state, actuationModel, costModel):
         crocoddyl.DifferentialActionModelAbstract.__init__(self, state, actuationModel.nu, costModel.nr)
         self.actuation = actuationModel
@@ -77,10 +77,10 @@ class DifferentialFreeASLRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbst
 
 
     def createData(self):
-        data = DifferentialFreeASLRFwdDynamicsData(self)
+        data = DifferentialFreeASRFwdDynamicsData(self)
         return data
 
-class DifferentialFreeASLRFwdDynamicsData(crocoddyl.DifferentialActionDataAbstract):
+class DifferentialFreeASRFwdDynamicsData(crocoddyl.DifferentialActionDataAbstract):
     def __init__(self, model):
         crocoddyl.DifferentialActionDataAbstract.__init__(self, model)
         self.pinocchio = pinocchio.Model.createData(model.state.pinocchio)

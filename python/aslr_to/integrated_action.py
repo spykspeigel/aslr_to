@@ -3,7 +3,7 @@ import pinocchio
 import crocoddyl
 
 
-class IntegratedActionModelEulerASLR(crocoddyl.ActionModelAbstract):
+class IntegratedActionModelEulerASR(crocoddyl.ActionModelAbstract):
     def __init__(self, diffModel, timeStep=1e-3, withCostResiduals=True):
         crocoddyl.ActionModelAbstract.__init__(self, diffModel.state, int(diffModel.state.nv/2), diffModel.nr)
         self.differential = diffModel
@@ -42,11 +42,11 @@ class IntegratedActionModelEulerASLR(crocoddyl.ActionModelAbstract):
         data.Luu[:, :] = data.differential.Luu
 
     def createData(self):
-        data = IntegratedActionDataEulerASLR(self)
+        data = IntegratedActionDataEulerASR(self)
         return data
 
 
-class IntegratedActionDataEulerASLR(crocoddyl.ActionDataAbstract):
+class IntegratedActionDataEulerASR(crocoddyl.ActionDataAbstract):
     def __init__(self, model):
         crocoddyl.ActionDataAbstract.__init__(self, model)
         self.differential = model.differential.createData()
