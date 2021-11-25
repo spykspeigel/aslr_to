@@ -91,5 +91,5 @@ class DifferentialFreeASRFwdDynamicsData(crocoddyl.DifferentialActionDataAbstrac
         self.Minv = None
         self.Binv = None
         #sea terms
-        self.K = np.eye(int(model.state.nv/2))
-        self.B = np.eye(int(model.state.nv/2))
+        self.K = 1e-1*np.eye(int(model.state.nv/2))
+        self.B = 1e-4*np.eye(int(model.state.nv/2))
