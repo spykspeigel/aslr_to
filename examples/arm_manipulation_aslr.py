@@ -8,7 +8,7 @@ import pinocchio
 import numpy as np
 import example_robot_data
 import aslr_to
-
+import time
 WITHDISPLAY = 'display' in sys.argv or 'CROCODDYL_DISPLAY' in os.environ
 WITHPLOT = 'plot' in sys.argv or 'CROCODDYL_PLOT' in os.environ
 
@@ -23,7 +23,7 @@ nu = actuation.nu
 runningCostModel = crocoddyl.CostModelSum(state,nu)
 terminalCostModel = crocoddyl.CostModelSum(state,nu)
 
-xActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e-1] * 7 + [1e1] * 7 + [1e-2] * robot_model.nv+[1e1]* robot_model.nv))
+xActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e-1] * 7 + [1e-3] * 7 + [1e-1] * robot_model.nv+[1e-3]* robot_model.nv))
 xResidual = crocoddyl.ResidualModelState(state, state.zero(), nu)
 xRegCost = crocoddyl.CostModelResidual(state, xActivation, xResidual)
 uResidual = crocoddyl.ResidualModelControl(state, nu)
@@ -36,9 +36,9 @@ goalTrackingCost = crocoddyl.CostModelResidual(state, framePlacementResidual)
 
 # Then let's added the running and terminal cost functions
 runningCostModel.addCost("gripperPose", goalTrackingCost, 1e1)
-runningCostModel.addCost("xReg", xRegCost, 1e-3)
-runningCostModel.addCost("uReg", uRegCost, 1e-4)
-terminalCostModel.addCost("gripperPose", goalTrackingCost, 1e3)
+runningCostModel.addCost("xReg", xRegCost, 1e-2)
+runningCostModel.addCost("uReg", uRegCost, 1e-3)
+terminalCostModel.addCost("gripperPose", goalTrackingCost, 1e4)
 
 
 dt = 1e-2
@@ -46,10 +46,10 @@ runningModel = aslr_to.IntegratedActionModelEulerASR(
     aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, runningCostModel), dt)
 #runningModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
 terminalModel = aslr_to.IntegratedActionModelEulerASR(
-    aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, terminalCostModel), dt)
+    aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, terminalCostModel), 0)
 #terminalModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
 
-T = 100
+T = 150
 
 q0 = np.array([0.173046, 1., -0.52366, 0., 0., 0.1, -0.005])
 x0 = np.concatenate([q0, np.zeros(7),pinocchio.utils.zero(state.nv)])
@@ -84,10 +84,12 @@ print('Finally reached = ', solver.problem.terminalData.differential.multibody.p
 # Plotting the solution and the DDP convergence
 if WITHPLOT:
     log = solver.getCallbacks()[0]
-    crocoddyl.plotOCSolution(log.xs, log.us, figIndex=1, show=False)
-    crocoddyl.plotConvergence(log.costs, log.u_regs, log.x_regs, log.grads, log.stops, log.steps, figIndex=2)
+    crocoddyl.plotOCSolution(log.xs, figIndex=1, show=False)
+    #crocoddyl.plotConvergence(log.costs, log.u_regs, log.x_regs, log.grads, log.stops, log.steps, figIndex=2)
 
 # Visualizing the solution in gepetto-viewer
 if WITHDISPLAY:
-    display = crocoddyl.GepettoDisplay(talos_arm, 4, 4, cameraTF)
-    display.displayFromSolver(solver)
+    while True:
+        display = crocoddyl.GepettoDisplay(talos_arm, 4, 4, cameraTF)
+        display.displayFromSolver(solver)
+        time.sleep(2)
