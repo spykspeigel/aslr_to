@@ -4,12 +4,20 @@ import crocoddyl
 
 
 class DifferentialFreeASRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbstract):
-    def __init__(self, state, actuationModel, costModel):
+    def __init__(self, state, actuationModel, costModel, K=None, B=None):
         crocoddyl.DifferentialActionModelAbstract.__init__(self, state, actuationModel.nu, costModel.nr)
         self.actuation = actuationModel
         self.costs = costModel
         self.enable_force = True
-
+        if K is None:
+            self.K = 1e-1*np.eye(int(state.nv/2))
+            print('hey')
+        else:
+            self.K = K
+        if B is None:
+            self.B = 1e-3*np.eye(int(state.nv/2))
+        else:
+            self.B = B 
     def calc(self, data, x, u=None):
         if u is None:
             u = np.zeros(self.nu)
@@ -24,13 +32,13 @@ class DifferentialFreeASRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbstr
         self.actuation.calc(data.actuation, x_m, u)
         tau = data.actuation.tau
 
-        data.tau_couple = np.dot(data.K, q_l-q_m)
+        data.tau_couple = np.dot(self.K, q_l-q_m)
 
         # Computing the fwd dynamics manually
         pinocchio.computeAllTerms(self.state.pinocchio, data.pinocchio, q_l, v_l)
         data.M = data.pinocchio.M
         data.Minv = np.linalg.inv(data.M)
-        data.Binv = np.linalg.inv(data.B)
+        data.Binv = np.linalg.inv(self.B)
         data.xout[:int(nv/2)] = np.dot(data.Minv, (tau[:int(nv/2)] - data.pinocchio.nle - data.tau_couple))
 
         # Computing the motor side dynamics
@@ -62,13 +70,13 @@ class DifferentialFreeASRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbstr
         
         # Computing the dynamics derivatives
         pinocchio.computeRNEADerivatives(self.state.pinocchio, data.pinocchio, q_l, v_l, data.xout[:int(nv/2)])
-        ddq_dq = np.dot(data.Minv, ( - data.pinocchio.dtau_dq - data.K))
+        ddq_dq = np.dot(data.Minv, ( - data.pinocchio.dtau_dq - self.K))
         ddq_dv = np.dot(data.Minv, ( - data.pinocchio.dtau_dv))
         data.Fx[:int(nv/2) , :int(nv/2)] = ddq_dq
-        data.Fx[:int(nv/2), int(nv/2):nv] = np.dot(data.Minv,data.K)
+        data.Fx[:int(nv/2), int(nv/2):nv] = np.dot(data.Minv,self.K)
         data.Fx[:int(nv/2), nv:-int(nv/2)] = ddq_dv
-        data.Fx[int(nv/2):, :int(nv/2)] = np.dot(data.Binv,data.K)
-        data.Fx[int(nv/2):, int(nv/2):nv] = -np.dot(data.Binv,data.K)
+        data.Fx[int(nv/2):, :int(nv/2)] = np.dot(data.Binv,self.K)
+        data.Fx[int(nv/2):, int(nv/2):nv] = -np.dot(data.Binv,self.K)
         
         data.Fu[int(nv/2):, :] = data.Binv
 
@@ -90,6 +98,4 @@ class DifferentialFreeASRFwdDynamicsData(crocoddyl.DifferentialActionDataAbstrac
         self.costs.shareMemory(self)
         self.Minv = None
         self.Binv = None
-        #sea terms
-        self.K = 1e-1*np.eye(int(model.state.nv/2))
-        self.B = 1e-4*np.eye(int(model.state.nv/2))
+

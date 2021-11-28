@@ -60,7 +60,6 @@ class DDPASLR(crocoddyl.SolverAbstract):
                 if self.dV_exp >= 0:
                     if d1 < self.th_grad or not self.isFeasible or self.dV > self.th_acceptStep * self.dV_exp:
                         # Accept step
-                        print("2nd check")
                         self.wasFeasible = self.isFeasible
                         self.setCandidate(self.xs_try, self.us_try, True)
                         self.cost = self.cost_try
@@ -71,7 +70,6 @@ class DDPASLR(crocoddyl.SolverAbstract):
                 self.increaseRegularization()
                 if self.x_reg == self.reg_max:
                     return self.xs, self.us, False
-                    print("4th check")
             self.stepLength = a
             self.iter = i
             self.stop = self.stoppingCriteria()
@@ -80,7 +78,6 @@ class DDPASLR(crocoddyl.SolverAbstract):
                 [c(self) for c in self.getCallbacks()]
 
             if self.wasFeasible and self.stop < self.th_stop:
-                print("5th check")
                 return self.xs, self.us, True
         return self.xs, self.us, False
 

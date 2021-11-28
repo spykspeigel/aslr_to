@@ -10,4 +10,5 @@ import crocoddyl
 import pinocchio
 import time
 import warnings
+import matplotlib.pyplot as plt
 
