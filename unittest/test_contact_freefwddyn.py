@@ -9,15 +9,15 @@ import aslr_to
 from test_utils_ex import NUMDIFF_MODIFIER, assertNumDiff
 
 ROBOT_MODEL = example_robot_data.load("anymal").model
-STATE = crocoddyl.StateMultibody(ROBOT_MODEL)
-ACTUATION = crocoddyl.ActuationModelFloatingBase(STATE)
+STATE = aslr_to.StateMultiASR(ROBOT_MODEL)
+ACTUATION = aslr_to.ASRFreeFloatingActuation(STATE)
 SUPPORT_FEET = [
     ROBOT_MODEL.getFrameId('LF_FOOT'),
     ROBOT_MODEL.getFrameId('RF_FOOT'),
     ROBOT_MODEL.getFrameId('LH_FOOT'),
     ROBOT_MODEL.getFrameId('RH_FOOT')
 ]
-nu = ACTUATION.nu + STATE.nv + 3 * len(SUPPORT_FEET)
+nu = ACTUATION.nu
 CONTACTS = crocoddyl.ContactModelMultiple(STATE, nu)
 for i in SUPPORT_FEET:
     xref = crocoddyl.FrameTranslation(i, np.array([0., 0., 0.]))

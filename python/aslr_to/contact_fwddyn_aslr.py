@@ -12,22 +12,28 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         self.contacts = contacts
 
     def calc(self, data, x, u):
-        if len(x) != self.state.nx:
-            raise Exception("Invalid argument: u has wrong dimension (it should be " + self.state.nx)
+        print(len(x))
+        print(self.state.nx_)
+        if len(x) != self.state.nx_:
+            raise Exception("Invalid argument: u has wrong dimension (it should be " + str(self.state.nx))
         if len(u) != self.nu:
-            raise Exception("Invalid argument: u has wrong dimension (it should be " + self.nu)
-        nq, nv, nu = self.state.nq, self.state.nv, self.actuation.nu
+            raise Exception("Invalid argument: u has wrong dimension (it should be " + str(self.nu)+"it is "+ str(len(u)))
+
+        nu = self.actuation.nu
         nc = self.contacts.nc
+        nq_l = self.state.nq_l
+        nv_l = self.state.nv_l
+        nq = nq_l+ self.state.nq_m
+        nv = nv_l +self.state.nv_m
 
-        q_l = x[:int(nq/2)]
-        q_m = x[int(nq/2):nq]
-        v_l = x[-nv:-int(nv/2)]
-        v_m = x[-int(nv/2):]
-        x_m = np.hstack([q_m,v_m])
+        q_l = x[:nq_l]
+        q_m = x[nq_l:nq]
+        v_l = x[nq:-self.state.nv_m]
+        v_m = x[-self.state.nv_m:]
+
         x_l = np.hstack([q_l,v_l])
-
-
-        data.tau_couple = np.dot(data.K, q_l-q_m)
+        print(q_l.shape)
+        data.tau_couple = np.dot(data.K, q_l[:-self.state.nq_m]-q_m)
 
         pinocchio.computeAllTerms(self.state.pinocchio, data.multibody.pinocchio, q_l, v_l)
         pinocchio.computeCentroidalDynamics(self.state.pinocchio, data.multibody.pinocchio, q_l, v_l)
@@ -38,11 +44,11 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         tau = data.actuation.tau
 
         JMinvJt_damping_=0
-        pinocchio.forwardDynamics(self.state.pinocchio, data.multibody.pinocchio, data.multibody.actuation.tau - data.tau_couple, data.multibody.contacts.Jc[:nc,:],
+        pinocchio.forwardDynamics(self.state.pinocchio, data.multibody.pinocchio, tau[:nv_l] - data.tau_couple, data.multibody.contacts.Jc[:nc,:],
                         data.multibody.contacts.a0[:nc], JMinvJt_damping_)
 
-        data.xout[:int(nv/2)] = data.multibody.pinocchio.ddq
-        data.xout[int(nv/2):] = np.dot(data.Binv, tau[int(nv/2):] + data.tau_couple)
+        data.xout[:nv_l] = data.multibody.pinocchio.ddq
+        data.xout[nv_l:] = np.dot(data.Binv, tau[nv_l:] + data.tau_couple[:-self.state.nv_m])
 
         self.contacts.updateAcceleration(data.multibody.contacts, data.multibody.pinocchio.ddq)
         self.contacts.updateForce(data.multibody.contacts, data.multibody.pinocchio.lambda_c)
@@ -53,30 +59,37 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
 
     def calcDiff(self, data, x, u):
 
-        nq, nv, nu = self.state.nq, self.state.nv, self.actuation.nu
+        nu = self.actuation.nu
         nc = self.contacts.nc
+        nq_l = self.state.nq_l
+        nv_l = self.state.nv_l
+        nq = nq_l+ self.state.nq_m
+        nv = nv_l +self.state.nv_m
 
-        q_l = x[:int(nq/2)]
-        q_m = x[int(nq/2):nq]
-        v_l = x[-nv:-int(nv/2)]
-        v_m = x[-int(nv/2):]
-        x_m = np.hstack([q_m,v_m])
+        q_l = x[:nq_l]
+        q_m = x[nq_l:nq]
+        v_l = x[nq:-self.state.nv_m]
+        v_m = x[-self.state.nv_m:]
+
         x_l = np.hstack([q_l,v_l])
 
-        pinocchio.computeRNEADerivatives(self.state.pinocchio, data.multibody.pinocchio, q_l, v_l, data.xout[:int(nv/2)],
+        pinocchio.computeRNEADerivatives(self.state.pinocchio, data.multibody.pinocchio, q_l, v_l, data.xout[:nv_l],
                                          data.multibody.contacts.fext)
         data.Kinv = pinocchio.getKKTContactDynamicMatrixInverse(self.state.pinocchio, data.multibody.pinocchio, data.multibody.contacts.Jc[:nc,:])
         self.actuation.calcDiff(data.multibody.actuation, x, u)
         self.contacts.calcDiff(data.multibody.contacts, x_l)
 
-        a_partial_dtau = data.Kinv[:nv,:nv]
-        a_partial_da = data.Kinv[:nv,-nc:]
-        f_partial_dtau = data.Kinv[-nc:,:nv]
+        a_partial_dtau = data.Kinv[:nv_l,:nv_l]
+        a_partial_da = data.Kinv[:nv_l,-nc:]
+        f_partial_dtau = data.Kinv[-nc:,:nv_l]
         f_partial_da = data.Kinv[-nc:,-nc:]
-        data.Fx[:,:nv] = -np.dot(a_partial_dtau,data.multibody.pinocchio.dtau_dq + data.K[:,-nv:])
-        data.Fx[:,nv:] = -np.dot(a_partial_dtau, data.multibody.pinocchio.dtau_dv)
+        data.Fx[:nv_l,:nv_l] = -np.dot(a_partial_dtau,data.multibody.pinocchio.dtau_dq + data.K[:,-nv_l:])
+        data.Fx[:nv_l,self.nv:-self.nv_m] = -np.dot(a_partial_dtau, data.multibody.pinocchio.dtau_dv)
+
+        data.Fx[:nv_l,nv_l:nv] = np.dot(a_partial_dtau,data.K[:,-nv_l:])
+
         data.Fx -= np.dot(a_partial_da,data.multibody.contacts.da0_dx[:nc,:])
-        data.Fx += np.dot(a_partial_dtau,data.multibody.actuation.dtau_dx)
+        #data.Fx += np.dot(a_partial_dtau,data.multibody.actuation.dtau_dx)
         data.Fu = np.dot(a_partial_dtau, data.multibody.actuation.dtau_du)
 
         self.costs.calcDiff(data.costs, x, u)
@@ -96,8 +109,8 @@ class DifferentialContactASLRFwdDynData(crocoddyl.DifferentialActionDataAbstract
         self.costs.shareMemory(self)
         self.Minv = None
         self.Kinv = None
-        self.K = np.zeros([model.state.nv,model.state.nq])
+        self.K = np.zeros([model.state.nv_,model.state.nq])
         nu = model.actuation.nu
         self.K[-nu:,-nu:]= np.eye(nu)
-        self.B = np.random.random([model.state.nv,model.state.nv])
+        self.B = np.eye([model.state.nv,model.state.nv])
         
