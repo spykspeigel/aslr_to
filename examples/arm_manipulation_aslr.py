@@ -41,15 +41,15 @@ runningCostModel.addCost("uReg", uRegCost, 1e-3)
 terminalCostModel.addCost("gripperPose", goalTrackingCost, 1e4)
 
 
-K = 1e0*np.eye(int(state.nv/2))
-B = 1e-3*np.eye(int(state.nv/2))
+K = 1e1*np.eye(int(state.nv/2))
+B = 1e-2*np.eye(int(state.nv/2))
 
 dt = 1e-2
 runningModel = aslr_to.IntegratedActionModelEulerASR(
     aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, runningCostModel,K,B), dt)
 #runningModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
 terminalModel = aslr_to.IntegratedActionModelEulerASR(
-    aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, terminalCostModel,K,B), dt)
+    aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, terminalCostModel,K,B), 0)
 #terminalModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
 
 T = 150
