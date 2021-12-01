@@ -12,3 +12,42 @@ import time
 import warnings
 import matplotlib.pyplot as plt
 
+def plotOCSolution(xs=None, us=None, figIndex=1, show=True, figTitle=""):
+    import matplotlib.pyplot as plt
+    import numpy as np
+    plt.rcParams["pdf.fonttype"] = 42
+    plt.rcParams["ps.fonttype"] = 42
+
+    # Getting the state and control trajectories
+    if xs is not None:
+        xsPlotIdx = 111
+        nx = int(xs[0].shape[0]/4)
+        X = [0.] * nx
+        for i in range(nx):
+            X[i] = [np.asscalar(x[i]) for x in xs]
+    if us is not None:
+        usPlotIdx = 111
+        nu = us[0].shape[0]
+        U = [0.] * nu
+        for i in range(nu):
+            U[i] = [np.asscalar(u[i]) if u.shape[0] != 0 else 0 for u in us]
+    if xs is not None and us is not None:
+        xsPlotIdx = 211
+        usPlotIdx = 212
+    plt.figure(figIndex)
+
+    # Plotting the state trajectories
+    if xs is not None:
+        plt.subplot(xsPlotIdx)
+        [plt.plot(X[i], label="x" + str(i)) for i in range(nx)]
+        plt.legend()
+        plt.title(figTitle, fontsize=14)
+
+    # Plotting the control commands
+    if us is not None:
+        plt.subplot(usPlotIdx)
+        [plt.plot(U[i], label="u" + str(i)) for i in range(nu)]
+        plt.legend()
+        plt.xlabel("knots")
+    if show:
+        plt.show()
