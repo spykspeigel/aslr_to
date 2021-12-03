@@ -17,10 +17,10 @@ class StateMultiASR(crocoddyl.StateMultibody):
         self.nv_m = pinocchioModel.nv -6
         self.nv_l = pinocchioModel.nv
         self.nq_l = pinocchioModel.nq
-        self.ndx_ = 2 * pinocchioModel.nv+2*(pinocchioModel.nv-6)
-        self.nx_ =2*(pinocchioModel.nv-6) +(pinocchioModel.nq + pinocchioModel.nv)
-        self.nq_ = self.nq_m +self.nq_l
-        self.nv_ = self.nv_m +self.nv_l 
+        self.ndx = 2 * pinocchioModel.nv + 2*(pinocchioModel.nv-6)
+        self.nx = 2*(pinocchioModel.nv-6) +(pinocchioModel.nq + pinocchioModel.nv)
+        self.nq = self.nq_m +self.nq_l
+        self.nv = self.nv_m +self.nv_l
     def zero(self):
         q_l = pinocchio.neutral(self.pinocchio)
         v_l = pinocchio.utils.zero(self.pinocchio.nv)
@@ -37,9 +37,7 @@ class StateMultiASR(crocoddyl.StateMultibody):
 
     def diff(self, x0, x1):
         nq_l = self.pinocchio.nq
-        nv_l = self.pinocchio.nv
-        nq = nq_l+ self.nq_m
-        nv = nv_l +self.nv_m
+        nq = self.nq
         q0_l = x0[:nq_l]
         q0_m = x0[nq_l:nq]
         v0_l = x0[nq:-self.nv_m]
@@ -56,10 +54,12 @@ class StateMultiASR(crocoddyl.StateMultibody):
         return np.concatenate([dq_l, dq_m, v1_l - v0_l, v1_m - v0_m])
 
     def integrate(self, x, dx):
+        print("hey")
+        print("still not here")
         nq_l = self.pinocchio.nq
         nv_l = self.pinocchio.nv
-        nq = nq_l+ self.nq_m
-        nv = nv_l +self.nv_m
+        nq = self.nq
+        nv = self.nv
         q_l = x[:nq_l]
         q_m = x[nq_l:nq]
         v_l = x[nq:-self.nv_m]
@@ -68,7 +68,8 @@ class StateMultiASR(crocoddyl.StateMultibody):
         dq_m = dx[nv_l:nv]
         dv_l = dx[nv:-self.nv_m]
         dv_m = dx[-self.nv_m:]
-
+        print(q_l.shape)
+        print(dq_l.shape)
         qn_l = pinocchio.integrate(self.pinocchio, q_l, dq_l)
         qn_m = q_m+ dq_m
         return np.concatenate([qn_l, qn_m, v_l + dv_l, v_m + dv_m])
