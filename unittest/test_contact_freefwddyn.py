@@ -35,7 +35,6 @@ MODEL_ND.disturbance *= 10
 DATA_ND = MODEL_ND.createData()
 MODEL.calc( DATA,  x,  u)
 MODEL.calcDiff( DATA,  x,  u)
-
 MODEL_ND.calc(DATA_ND,  x,  u)
 MODEL_ND.calcDiff(DATA_ND,  x,  u)
 assertNumDiff( DATA.Fu, DATA_ND.Fu, NUMDIFF_MODIFIER *
