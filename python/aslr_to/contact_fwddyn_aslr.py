@@ -16,17 +16,15 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
             raise Exception("Invalid argument: u has wrong dimension (it should be " + str(self.state.nx))
         if len(u) != self.nu:
             raise Exception("Invalid argument: u has wrong dimension (it should be " + str(self.nu)+"it is "+ str(len(u)))
-        nu = self.actuation.nu
+
         nc = self.contacts.nc
         nq_l = self.state.nq_l
         nv_l = self.state.nv_l
         nq = self.state.nq
-        nv = nv_l +self.state.nv_m
-        print("-----------------")
         q_l = x[:nq_l]
         q_m = x[nq_l:nq]
         v_l = x[nq:-self.state.nv_m]
-        v_m = x[-self.state.nv_m:]
+
 
         x_l = np.hstack([q_l,v_l])
         data.tau_couple = np.dot(data.K, q_l-np.hstack([np.zeros(7),q_m]))
@@ -52,9 +50,7 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         data.cost = data.costs.cost
 
     def calcDiff(self, data, x, u):
-        print(self.state.nq)
-        print("________")
-        nu = self.actuation.nu
+
         nc = self.contacts.nc
         nq_l = self.state.nq_l
         nv_l = self.state.nv_l
@@ -62,9 +58,8 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         nv = self.state.nv
 
         q_l = x[:nq_l]
-        q_m = x[nq_l:nq]
+
         v_l = x[nq:-self.state.nv_m]
-        v_m = x[-self.state.nv_m:]
 
         x_l = np.hstack([q_l,v_l])
 
@@ -87,9 +82,13 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         data.Fx[:nv_l,:nv_l] -=   np.dot(a_partial_da, data.multibody.contacts.da0_dx[:nc,:nv_l])
         data.Fx[:nv_l,2*nv_l:-self.state.nv_m] -= np.dot(a_partial_da, data.multibody.contacts.da0_dx[:nc,2*nv_l:-self.state.nv_m])
 
+        data.Fx[nv_l:, nv_l:nv] = -np.dot(data.Binv,data.K[-self.actuation.nu:,-self.actuation.nu:])
+
+        data.Fx[nv_l:, :nv_l] = np.dot(data.Binv,data.K[-self.actuation.nu:,-nv_l:])
+        
         #data.Fx += np.dot(a_partial_dtau,data.multibody.actuation.dtau_dx)
-        data.Fu[nv_l:, ] = np.dot(data.Binv, data.multibody.actuation.dtau_du[nv_l:, :])
-        # print(data.Fu)
+        data.Fu[nv_l:, :] = np.dot(data.Binv, data.multibody.actuation.dtau_du[nv_l:, :])
+
         self.costs.calcDiff(data.costs, x[:self.state.nx], u)
 
     def createData(self):
