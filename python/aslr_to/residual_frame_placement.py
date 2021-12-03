@@ -2,6 +2,8 @@ import numpy as np
 import pinocchio
 import crocoddyl
 
+
+#Currently only supports Fully actuated case
 class ResidualModelFramePlacementASR(crocoddyl.ResidualModelAbstract):
     def __init__(self, state, frame_id=None, placement=None, nu=None):
         crocoddyl.ResidualModelAbstract.__init__(self, state, 6, nu,True, False, False)
