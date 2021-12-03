@@ -21,7 +21,9 @@ nu = ACTUATION.nu
 CONTACTS = crocoddyl.ContactModelMultiple(STATE, nu)
 for i in SUPPORT_FEET:
     xref = crocoddyl.FrameTranslation(i, np.array([0., 0., 0.]))
-    supportContactModel = crocoddyl.ContactModel3D(STATE, xref, nu, np.array([0., 50.]))
+    supportContactModel = aslr_to.Contact3DModelASLR(STATE, xref, nu, np.array([0., 50.]))
+    print(nu)
+    print(supportContactModel.nu)
     CONTACTS.addContact(ROBOT_MODEL.frames[i].name + "_contact", supportContactModel)
 COSTS = crocoddyl.CostModelSum(STATE, nu)
 MODEL = aslr_to.DifferentialContactASLRFwdDynModel(STATE, ACTUATION, CONTACTS, COSTS)
@@ -35,6 +37,7 @@ MODEL_ND.disturbance *= 10
 DATA_ND = MODEL_ND.createData()
 MODEL.calc( DATA,  x,  u)
 MODEL.calcDiff( DATA,  x,  u)
+print(DATA.Fu)
 MODEL_ND.calc(DATA_ND,  x,  u)
 MODEL_ND.calcDiff(DATA_ND,  x,  u)
 assertNumDiff( DATA.Fx, DATA_ND.Fx, NUMDIFF_MODIFIER *

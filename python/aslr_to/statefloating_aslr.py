@@ -18,6 +18,8 @@ class StateFloatingASR(crocoddyl.StateAbstract):
         self.nv_m = pinocchioModel.nv -6
         self.nv_l = pinocchioModel.nv
         self.nv_q = pinocchioModel.nq
+        self.nv_ = self.nv_l +self.nv_m
+        self.ndx_ = 2 * pinocchioModel.nv+2*(pinocchioModel.nv-6)
     def zero(self):
         q_l = pinocchio.neutral(self.pinocchio)
         v_l = pinocchio.utils.zero(self.pinocchio.nv)
@@ -54,7 +56,7 @@ class StateFloatingASR(crocoddyl.StateAbstract):
     def integrate(self, x, dx):
         nq_l = self.pinocchio.nq
         nv_l = self.pinocchio.nv
-
+        print('hello')
         q_l = x[:nq_l]
         q_m = x[nq_l:self.nq]
         v_l = x[self.nq:-self.nv_m]
@@ -64,7 +66,8 @@ class StateFloatingASR(crocoddyl.StateAbstract):
         dq_m = dx[nv_l:self.nv]
         dv_l = dx[self.nv:-self.nv_m]
         dv_m = dx[-self.nv_m:]
-        
+        print(q_l.shape)
+        print(dq_l.shape)
         qn_l = pinocchio.integrate(self.pinocchio, q_l, dq_l)
         qn_m = q_m+ dq_m
         return np.concatenate([qn_l, qn_m, v_l + dv_l, v_m + dv_m])

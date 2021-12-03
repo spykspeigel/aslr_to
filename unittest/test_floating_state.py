@@ -11,7 +11,7 @@ state = aslr_to.StateMultiASR(robot_model)
 
 x1 = state.rand()
 x2 = state.rand()
-dx_test = pinocchio.utils.rand(state.ndx_)
+dx_test = pinocchio.utils.rand(state.ndx)
 dx = state.diff(x1,x2)
 print(dx.shape)
 print(x1.shape)

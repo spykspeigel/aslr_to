@@ -8,7 +8,7 @@ class ASRFreeFloatingActuation(crocoddyl.ActuationModelAbstract):
         crocoddyl.ActuationModelAbstract.__init__(self, state, state.nv_m)
 
     def calc(self, data, x, u):
-        data.tau[self.nu:] = u
+        data.tau[-self.nu:] = u
 
     def calcDiff(self, data, x, u):
-        data.dtau_du[self.nu:, :] =  np.eye(self.nu)
+        data.dtau_du[-self.nu:, :] =  np.eye(self.nu)
