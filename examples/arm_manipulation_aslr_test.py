@@ -38,13 +38,13 @@ goalTrackingCost = crocoddyl.CostModelResidual(state, framePlacementResidual)
 runningCostModel.addCost("gripperPose", goalTrackingCost, 1e1)
 runningCostModel.addCost("xReg", xRegCost, 1e-2)
 runningCostModel.addCost("uReg", uRegCost, 1e-3)
-terminalCostModel.addCost("gripperPose", goalTrackingCost, 5e4)
+terminalCostModel.addCost("gripperPose", goalTrackingCost, 5e3)
 
 
-K = 10*np.eye(int(state.nv/2))
-B = 1e-2*np.eye(int(state.nv/2))
+K = 100*np.eye(int(state.nv/2))
+B = 1e-1*np.eye(int(state.nv/2))
 
-dt = 1e-2
+dt = 1e-3
 runningModel = aslr_to.IntegratedActionModelEulerASR(
     aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, runningCostModel,K,B), dt)
 #runningModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
@@ -52,7 +52,7 @@ terminalModel = aslr_to.IntegratedActionModelEulerASR(
     aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, terminalCostModel,K,B), 0)
 #terminalModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
 
-T = 150
+T = 1000
 
 q0 = np.array([0.173046, 1., -0.52366, 0., 0., 0.1, -0.005])
 x0 = np.concatenate([q0, q0,pinocchio.utils.zero(state.nv)])
@@ -60,7 +60,7 @@ print(x0.shape)
 problem = crocoddyl.ShootingProblem(x0, [runningModel] * T, terminalModel)
 
 # Creating the DDP solver for this OC problem, defining a logger
-solver = aslr_to.DDPASLR(problem)
+solver = crocoddyl.SolverFDDP(problem)
 cameraTF = [2., 2.68, 0.54, 0.2, 0.62, 0.72, 0.22]
 # if WITHDISPLAY and WITHPLOT:
 #     display = crocoddyl.GepettoDisplay(talos_arm, 4, 4, cameraTF)

@@ -41,7 +41,7 @@ runningCostModel.addCost("uReg", uRegCost, 1e-2)
 terminalCostModel.addCost("gripperPose", goalTrackingCost, 5e4)
 
 
-K = 1*np.eye(int(state.nv/2))
+K = 100*np.eye(int(state.nv/2))
 B = .2*np.eye(int(state.nv/2))
 
 dt = 1e-2
@@ -60,7 +60,7 @@ x0 = np.concatenate([q0,q0,pinocchio.utils.zero(state.nv)])
 problem = crocoddyl.ShootingProblem(x0, [runningModel] * T, terminalModel)
 
 # Creating the DDP solver for this OC problem, defining a logger
-solver = aslr_to.DDPASLR(problem)
+solver = crocoddyl.SolverDDP(problem)
 cameraTF = [2., 2.68, 0.54, 0.2, 0.62, 0.72, 0.22]
 
 if WITHDISPLAY:
