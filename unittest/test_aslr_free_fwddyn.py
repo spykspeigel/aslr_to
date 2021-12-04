@@ -8,7 +8,7 @@ import aslr_to
 from test_utils_ex import NUMDIFF_MODIFIER, assertNumDiff
 
 
-class ASLRFreeFwdDynamicsTestCase(unittest.TestCase):
+class ASRFreeFwdDynamicsTestCase(unittest.TestCase):
     MODEL = None
 
     def setUp(self):
@@ -42,17 +42,17 @@ class ASLRFreeFwdDynamicsTestCase(unittest.TestCase):
                       MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 
 
-class ASLRFreeDynamicsTest(ASLRFreeFwdDynamicsTestCase):
+class ASRFreeDynamicsTest(ASRFreeFwdDynamicsTestCase):
     ROBOT_MODEL = example_robot_data.load('talos_arm').model
-    STATE = aslr_to.StateMultibodyASLR(ROBOT_MODEL)
-    ACTUATION = aslr_to.ASLRActuation(STATE)
+    STATE = aslr_to.StateMultibodyASR(ROBOT_MODEL)
+    ACTUATION = aslr_to.ASRActuation(STATE)
     nu = ACTUATION.nu 
     COSTS = crocoddyl.CostModelSum(STATE, nu)
-    MODEL = aslr_to.DifferentialFreeASLRFwdDynamicsModel(STATE, ACTUATION, COSTS)
+    MODEL = aslr_to.DifferentialFreeASRFwdDynamicsModel(STATE, ACTUATION, COSTS)
 
 
 if __name__ == '__main__':
-    test_classes_to_run = [ASLRFreeDynamicsTest]
+    test_classes_to_run = [ASRFreeDynamicsTest]
     loader = unittest.TestLoader()
     suites_list = []
     for test_class in test_classes_to_run:

@@ -11,7 +11,6 @@ class DifferentialFreeASRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbstr
         self.enable_force = True
         if K is None:
             self.K = 1e-1*np.eye(int(state.nv/2))
-            print('hey')
         else:
             self.K = K
         if B is None:
