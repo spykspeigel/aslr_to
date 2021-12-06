@@ -12,6 +12,15 @@ import time
 import warnings
 import matplotlib.pyplot as plt
 
+
+def u_squared(log):
+    u1_sqaured = 0
+    u2_sqaured = 0
+    for i in range(len(log.us)):
+        u1_sqaured += log.us[i][0]**2
+        u2_sqaured += log.us[i][1]**2
+    return [u1_sqaured, u2_sqaured]
+
 def plotOCSolution(xs=None, us=None, figIndex=1, show=True, figTitle=""):
     import matplotlib.pyplot as plt
     import numpy as np

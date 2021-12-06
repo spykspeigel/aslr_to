@@ -37,19 +37,19 @@ goalTrackingCost = crocoddyl.CostModelResidual(state, framePlacementResidual)
 # Then let's added the running and terminal cost functions
 runningCostModel.addCost("gripperPose", goalTrackingCost, 1e1)
 runningCostModel.addCost("xReg", xRegCost, 1e-1)
-runningCostModel.addCost("uReg", uRegCost, 1e-2)
+runningCostModel.addCost("uReg", uRegCost, 1e-1)
 terminalCostModel.addCost("gripperPose", goalTrackingCost, 5e4)
 
 
-K = 100*np.eye(int(state.nv/2))
-B = .2*np.eye(int(state.nv/2))
+K = 10*np.eye(int(state.nv/2))
+B = .02*np.eye(int(state.nv/2))
 
 dt = 1e-2
 runningModel = aslr_to.IntegratedActionModelEulerASR(
     aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, runningCostModel,K,B), dt)
 #runningModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
 terminalModel = aslr_to.IntegratedActionModelEulerASR(
-    aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, terminalCostModel,K,B), dt)
+    aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, terminalCostModel,K,B), 0)
 #terminalModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
 
 T = 150
@@ -77,6 +77,12 @@ solver.solve()
 print('Finally reached = ', solver.problem.terminalData.differential.multibody.pinocchio.oMf[robot_model.getFrameId(
     "EE")].translation.T)
 
+log = solver.getCallbacks()[0]
+u1 , u2 = aslr_to.u_squared(log)
+print("printing usquared")
+print(u1)
+print("______")
+print(u2)
 # Plotting the solution and the DDP convergence
 if WITHPLOT:
     log = solver.getCallbacks()[0]

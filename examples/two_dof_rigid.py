@@ -35,16 +35,14 @@ xRegCost = crocoddyl.CostModelResidual(state, xResidual)
 # Then let's added the running and terminal cost functions
 runningCostModel.addCost("gripperPose", goalTrackingCost, 1e1)
 runningCostModel.addCost("xReg", xRegCost, 1e-1)
-runningCostModel.addCost("uReg", uRegCost, 1e-2)
+runningCostModel.addCost("uReg", uRegCost, 1e-1)
 terminalCostModel.addCost("gripperPose", goalTrackingCost, 5e4)
-
-
 
 dt = 1e-2
 runningModel = crocoddyl.IntegratedActionModelEuler(
     crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, runningCostModel), dt)
 terminalModel = crocoddyl.IntegratedActionModelEuler(
-    crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, terminalCostModel), dt)
+    crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, terminalCostModel), 0)
 
 T = 150
 
@@ -72,6 +70,12 @@ solver.solve()
 print('Finally reached = ', solver.problem.terminalData.differential.multibody.pinocchio.oMf[robot_model.getFrameId(
     "EE")].translation.T)
 
+log = solver.getCallbacks()[0]
+u1 , u2 = aslr_to.u_squared(log)
+print("printing usquared")
+print(u1)
+print("______")
+print(u2)
 # Plotting the solution and the DDP convergence
 if WITHPLOT:
     log = solver.getCallbacks()[0]
