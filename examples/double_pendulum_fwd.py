@@ -4,17 +4,17 @@ import sys
 import crocoddyl
 import numpy as np
 import example_robot_data
-from pendulum_fwd import CostModelDoublePendulum, ActuationModelDoublePendulum
+from crocoddyl.utils.pendulum import CostModelDoublePendulum, ActuationModelDoublePendulum
 import time
 WITHDISPLAY = 'display' in sys.argv or 'CROCODDYL_DISPLAY' in os.environ
 WITHPLOT = 'plot' in sys.argv or 'CROCODDYL_PLOT' in os.environ
-
+import aslr_to
 # Loading the double pendulum model
 pendulum = example_robot_data.load('double_pendulum')
 model = pendulum.model
 
 state = crocoddyl.StateMultibody(model)
-actuation = ActuationModelDoublePendulum(state)
+actuation = ActuationModelDoublePendulum(state,actLink=1)
 
 nu = actuation.nu
 runningCostModel = crocoddyl.CostModelSum(state, nu)
@@ -27,11 +27,14 @@ xRegCost = crocoddyl.CostModelResidual(state, xActivation, xResidual)
 uRegCost = crocoddyl.CostModelResidual(state, uResidual)
 xPendCost = CostModelDoublePendulum(state, crocoddyl.ActivationModelWeightedQuad(np.array([1.] * 4 + [0.1] * 2)), nu)
 
-dt = 1e-3
+dt = 1e-2
 
-runningCostModel.addCost("uReg", uRegCost, 1e-3)
-runningCostModel.addCost("xReg", xPendCost, 1e-2)
+runningCostModel.addCost("uReg", uRegCost, 1e-2)
+runningCostModel.addCost("xReg", xRegCost, 1e-3)
+runningCostModel.addCost("xGoalR", xPendCost, 1e0)
+
 terminalCostModel.addCost("xGoal", xPendCost, 1e4)
+
 
 runningModel = crocoddyl.IntegratedActionModelEuler(
     crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, runningCostModel), dt)
@@ -39,7 +42,7 @@ terminalModel = crocoddyl.IntegratedActionModelEuler(
     crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, terminalCostModel), dt)
 
 # Creating the shooting problem and the FDDP solver
-T = 250
+T = 50
 x0 = np.array([3.14, 0., 0., 0.])
 problem = crocoddyl.ShootingProblem(x0, [runningModel] * T, terminalModel)
 problem.nthreads = 1  # TODO(cmastalli): Remove after Crocoddyl supports multithreading with Python-derived models
@@ -60,6 +63,12 @@ else:
 # Solving the problem with the FDDP solver
 solver.solve()
 
+# log = solver.getCallbacks()[0]
+# u1 , u2 = aslr_to.u_squared(log)
+# print("printing usquared")
+# print(u1)
+# print("______")
+# print(u2)
 # Plotting the entire motion
 if WITHPLOT:
     log = solver.getCallbacks()[0]

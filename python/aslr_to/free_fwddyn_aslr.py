@@ -30,7 +30,6 @@ class DifferentialFreeASRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbstr
 
         self.actuation.calc(data.actuation, x_m, u)
         tau = data.actuation.tau
-
         data.tau_couple = np.dot(self.K, q_l-q_m)
 
         # Computing the fwd dynamics manually
@@ -78,7 +77,8 @@ class DifferentialFreeASRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbstr
         data.Fx[int(nv/2):, int(nv/2):nv] = -np.dot(data.Binv,self.K)
         
         if self.actuation.nu >1:
-            data.Fu[int(nv/2):, :] = data.Binv
+            data.Fu[int(nv/2):, :] = np.dot(data.Binv,data.actuation.dtau_du[int(nv/2):,:])
+
         # Computing the cost derivatives
         self.costs.calcDiff(data.costs, x, u)
 

@@ -6,7 +6,7 @@ import example_robot_data
 import numpy as np
 import aslr_to
 from test_utils_ex import NUMDIFF_MODIFIER, assertNumDiff
-
+from aslr_to import CostModelDoublePendulum, ActuationModelDoublePendulum
 
 class ASRFreeFwdDynamicsTestCase(unittest.TestCase):
     MODEL = None
@@ -42,7 +42,7 @@ class ASRFreeFwdDynamicsTestCase(unittest.TestCase):
                       MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 
 
-class ASRFreeDynamicsTest(ASRFreeFwdDynamicsTestCase):
+class ASRFreeDynamicsTalosTest(ASRFreeFwdDynamicsTestCase):
     ROBOT_MODEL = example_robot_data.load('talos_arm').model
     STATE = aslr_to.StateMultibodyASR(ROBOT_MODEL)
     ACTUATION = aslr_to.ASRActuation(STATE)
@@ -50,9 +50,17 @@ class ASRFreeDynamicsTest(ASRFreeFwdDynamicsTestCase):
     COSTS = crocoddyl.CostModelSum(STATE, nu)
     MODEL = aslr_to.DifferentialFreeASRFwdDynamicsModel(STATE, ACTUATION, COSTS)
 
+class ASRFreeDynamicsDoublePendTest(ASRFreeFwdDynamicsTestCase):
+    ROBOT_MODEL = example_robot_data.load('double_pendulum').model
+    STATE = aslr_to.StateMultibodyASR(ROBOT_MODEL)
+    ACTUATION = aslr_to.ActuationModelDoublePendulum(STATE,1)
+    nu = ACTUATION.nu 
+    COSTS = crocoddyl.CostModelSum(STATE, nu)
+    MODEL = aslr_to.DifferentialFreeASRFwdDynamicsModel(STATE, ACTUATION, COSTS)
+
 
 if __name__ == '__main__':
-    test_classes_to_run = [ASRFreeDynamicsTest]
+    test_classes_to_run = [ASRFreeDynamicsTalosTest,ASRFreeDynamicsDoublePendTest]
     loader = unittest.TestLoader()
     suites_list = []
     for test_class in test_classes_to_run:

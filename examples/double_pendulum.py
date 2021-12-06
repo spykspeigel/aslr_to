@@ -17,26 +17,29 @@ model = pendulum.model
 
 state = aslr_to.StateMultibodyASR(model)
 
-actuation = ActuationModelDoublePendulum(state)#, actLink=1)
+actuation = ActuationModelDoublePendulum(state, actLink=1)
 
 nu = actuation.nu
 print(nu)
 runningCostModel = crocoddyl.CostModelSum(state, nu)
 terminalCostModel = crocoddyl.CostModelSum(state, nu)
 
+xActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e0] *2 + [1e-3] *2 + [1e0] * model.nv + [1e-3]* model.nv))
 xResidual = crocoddyl.ResidualModelState(state, state.zero(), nu)
-xActivation = crocoddyl.ActivationModelQuad(state.ndx)
+xRegCost = crocoddyl.CostModelResidual(state, xActivation, xResidual)
 uResidual = crocoddyl.ResidualModelControl(state, nu)
 uActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1.] * actuation.nu))
-xRegCost = crocoddyl.CostModelResidual(state, xActivation, xResidual)
+
 uRegCost = crocoddyl.CostModelResidual(state, uActivation, uResidual)
 xPendCost = CostModelDoublePendulum(state, crocoddyl.ActivationModelWeightedQuad(np.array([1.] * 4 + [0.1] * 2)), nu)
 
 
-dt = 1e-3
+dt = 1e-2
 
-runningCostModel.addCost("uReg", uRegCost, 1e-3)
-runningCostModel.addCost("xReg", xPendCost, 1e-2)
+runningCostModel.addCost("uReg", uRegCost, 1e-2)
+runningCostModel.addCost("xReg", xRegCost, 1e-3)
+runningCostModel.addCost("xGoalR", xPendCost, 1e0)
+
 terminalCostModel.addCost("xGoal", xPendCost, 1e4)
 
 K = 1*np.eye(int(state.nv/2))
@@ -49,7 +52,7 @@ terminalModel = aslr_to.IntegratedActionModelEulerASR(
     aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, terminalCostModel,K,B), dt)
 
 # Creating the shooting problem and the solver
-T = 250
+T = 50
 x0 = np.array([3.14, 0., 0., 0., 0,0 ,0,0])
 problem = crocoddyl.ShootingProblem(x0, [runningModel] * T, terminalModel)
 problem.nthreads = 1  # TODO(cmastalli): Remove after Crocoddyl supports multithreading with Python-derived models
@@ -70,6 +73,12 @@ else:
 # Solving the problem with the solver
 solver.solve()
 
+log = solver.getCallbacks()[0]
+u1 , u2 = aslr_to.u_squared(log)
+print("printing usquared")
+print(u1)
+print("______")
+print(u2)
 # Plotting the entire motion
 if WITHPLOT:
     log = solver.getCallbacks()[0]
