@@ -77,8 +77,8 @@ class DifferentialFreeASRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbstr
         data.Fx[int(nv/2):, :int(nv/2)] = np.dot(data.Binv,self.K)
         data.Fx[int(nv/2):, int(nv/2):nv] = -np.dot(data.Binv,self.K)
         
-        data.Fu[int(nv/2):, :] = data.Binv
-
+        if self.actuation.nu >1:
+            data.Fu[int(nv/2):, :] = data.Binv
         # Computing the cost derivatives
         self.costs.calcDiff(data.costs, x, u)
 
