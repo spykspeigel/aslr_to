@@ -4,7 +4,7 @@ import sys
 import crocoddyl
 import numpy as np
 import example_robot_data
-from pendulum import CostModelDoublePendulum, ActuationModelDoublePendulum
+#from pendulum import CostModelDoublePendulum, ActuationModelDoublePendulum
 import aslr_to
 import time
 WITHDISPLAY = 'display' in sys.argv or 'CROCODDYL_DISPLAY' in os.environ
@@ -17,7 +17,7 @@ model = pendulum.model
 
 state = aslr_to.StateMultibodyASR(model)
 
-actuation = ActuationModelDoublePendulum(state, actLink=1)
+actuation = aslr_to.ActuationModelDoublePendulum(state, actLink=1)
 
 nu = actuation.nu
 print(nu)
@@ -31,7 +31,7 @@ uResidual = crocoddyl.ResidualModelControl(state, nu)
 uActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1.] * actuation.nu))
 
 uRegCost = crocoddyl.CostModelResidual(state, uActivation, uResidual)
-xPendCost = CostModelDoublePendulum(state, crocoddyl.ActivationModelWeightedQuad(np.array([1.] * 4 + [0.1] * 2)), nu)
+xPendCost = aslr_to.CostModelDoublePendulum(state, crocoddyl.ActivationModelWeightedQuad(np.array([1.] * 4 + [0.1] * 2)), nu)
 
 
 dt = 1e-2
@@ -73,13 +73,13 @@ else:
 # Solving the problem with the solver
 solver.solve()
 
-log = solver.getCallbacks()[0]
-u1 , u2 = aslr_to.u_squared(log)
-print("printing usquared")
-print(u1)
-print("______")
-print(u2)
-# Plotting the entire motion
+# log = solver.getCallbacks()[0]
+# u1 , u2 = aslr_to.u_squared(log)
+# print("printing usquared")
+# print(u1)
+# print("______")
+# print(u2)
+# # Plotting the entire motion
 if WITHPLOT:
     log = solver.getCallbacks()[0]
     aslr_to.plotOCSolution(log.xs, log.us, figIndex=1, show=False)
