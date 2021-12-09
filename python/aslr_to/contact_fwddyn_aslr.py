@@ -20,13 +20,12 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         nc = self.contacts.nc
         nq_l = self.state.nq_l
         nv_l = self.state.nv_l
-        nq = self.state.nq
+        nl = nq_l + nv_l
         q_l = x[:nq_l]
-        q_m = x[nq_l:nq]
-        v_l = x[nq:-self.state.nv_m]
+        v_l = x[nq_l:nl]
+        q_m = x[nl:-self.state.nv_m]
 
-
-        x_l = np.hstack([q_l,v_l])
+        x_l = x[:nl]
         data.tau_couple = np.dot(data.K, q_l-np.hstack([np.zeros(7),q_m]))
 
         pinocchio.computeAllTerms(self.state.pinocchio, data.multibody.pinocchio, q_l, v_l)
@@ -43,7 +42,7 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
 
         data.xout[:nv_l] = data.multibody.pinocchio.ddq
         data.xout[nv_l:] =  np.dot(data.Binv, tau[-self.state.nv_m:] + data.tau_couple[-self.state.nv_m:])
-        self.contacts.updateAcceleration(data.multibody.contacts, data.xout)
+        self.contacts.updateAcceleration(data.multibody.contacts, data.xout[:nv_l])
 
         self.contacts.updateForce(data.multibody.contacts, data.multibody.pinocchio.lambda_c)
         self.costs.calc(data.costs, x[:self.state.nx], u)
@@ -54,14 +53,15 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         nc = self.contacts.nc
         nq_l = self.state.nq_l
         nv_l = self.state.nv_l
-        nq = self.state.nq
+        nv_m = self.state.nv_m
         nv = self.state.nv
+        nl = nq_l + nv_l
 
+        q_m = x[nl:-self.state.nv_m]
         q_l = x[:nq_l]
+        v_l = x[nq_l:nl]
 
-        v_l = x[nq:-self.state.nv_m]
-
-        x_l = np.hstack([q_l,v_l])
+        x_l = x[:nl]
 
         pinocchio.computeRNEADerivatives(self.state.pinocchio, data.multibody.pinocchio, q_l, v_l, data.xout[:nv_l],
                                          data.multibody.contacts.fext)
@@ -71,24 +71,35 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
 
         a_partial_dtau = data.Kinv[:nv_l,:nv_l]
         a_partial_da = data.Kinv[:nv_l,-nc:]
+
         f_partial_dtau = data.Kinv[-nc:,:nv_l]
         f_partial_da = data.Kinv[-nc:,-nc:]
 
         data.Fx[:nv_l,:nv_l] = -np.dot(a_partial_dtau,data.multibody.pinocchio.dtau_dq + data.K[:,-nv_l:])
-        data.Fx[:nv_l,nv:-self.state.nv_m] = -np.dot(a_partial_dtau, data.multibody.pinocchio.dtau_dv)
+        data.Fx[:nv_l,nv_l:2*nv_l] = -np.dot(a_partial_dtau, data.multibody.pinocchio.dtau_dv)
+        data.Fx[:nv_l,2*nv_l:-nv_m] = np.dot(a_partial_dtau,data.K[:,-self.state.nv_m:])
 
-        data.Fx[:nv_l,nv_l:nv] = np.dot(a_partial_dtau,data.K[:,-self.state.nv_m:])
-
-        data.Fx[:nv_l,:nv_l] -=   np.dot(a_partial_da, data.multibody.contacts.da0_dx[:nc,:nv_l])
-        data.Fx[:nv_l,2*nv_l:-self.state.nv_m] -= np.dot(a_partial_da, data.multibody.contacts.da0_dx[:nc,2*nv_l:-self.state.nv_m])
-
-        data.Fx[nv_l:, nv_l:nv] = -np.dot(data.Binv,data.K[-self.actuation.nu:,-self.actuation.nu:])
+        data.Fx[:nv_l,:2*nv_l] -=   np.dot(a_partial_da, data.multibody.contacts.da0_dx[:nc,:])
 
         data.Fx[nv_l:, :nv_l] = np.dot(data.Binv,data.K[-self.actuation.nu:,-nv_l:])
+
+        data.Fx[nv_l:, 2*nv_l:-nv_m] = -np.dot(data.Binv,data.K[-self.actuation.nu:, -self.actuation.nu:])
+
         
         #data.Fx += np.dot(a_partial_dtau,data.multibody.actuation.dtau_dx)
         data.Fu[nv_l:, :] = np.dot(data.Binv, data.multibody.actuation.dtau_du[nv_l:, :])
 
+        data.df_dx[:nc, :nv_l] = np.dot(f_partial_dtau, data.multibody.pinocchio.dtau_dq)
+        data.df_dx[:nc, nv_l:2*nv_l] = np.dot(f_partial_dtau, data.multibody.pinocchio.dtau_dv)
+        data.df_dx[:nc, 2*nv_l:-nv_m] = np.dot(f_partial_dtau,data.K[:,-self.state.nv_m:])
+        data.df_dx[:nc, :nv_l] += np.dot(f_partial_da, data.multibody.contacts.da0_dx[:nc,:nv_l])
+        data.df_dx[:nc, nv_l:2*nv_l] += np.dot(f_partial_da, data.multibody.contacts.da0_dx[:nc,nv_l:])
+
+        #data.df_dx[:nc] -= np.dot(f_partial_dtau, data.multibody.actuation.dtau_dx)
+        data.df_du[:nc,: ] = -np.dot(f_partial_dtau[:,-self.state.nv_m:], data.multibody.actuation.dtau_du[nv_l:, :])
+        self.contacts.updateAccelerationDiff(data.multibody.contacts, data.Fx[-nv_l:,:2*nv_l])
+        self.contacts.updateForceDiff(data.multibody.contacts, data.df_dx[:nc,:2*nv_l], data.df_du[:nc,:])
+        
         self.costs.calcDiff(data.costs, x[:self.state.nx], u)
 
     def createData(self):
@@ -102,12 +113,13 @@ class DifferentialContactASLRFwdDynData(crocoddyl.DifferentialActionDataAbstract
         actuation = model.actuation.createData()
         contacts = model.contacts.createData(pmodel)
         self.multibody = crocoddyl.DataCollectorActMultibodyInContact(pmodel, actuation, contacts)
-        #print(self.multibody.contacts.Jc.shape)
         self.costs = model.costs.createData(self.multibody)
         self.costs.shareMemory(self)
         self.Minv = None
         self.Kinv = None
         self.K = np.zeros([model.state.pinocchio.nv,model.state.pinocchio.nq])
         nu = model.actuation.nu
-        self.K[-nu:,-nu:]= np.eye(nu)
-        self.B = np.eye(model.state.nv_m)
+        self.K[-nu:,-nu:]= 1*np.eye(nu)
+        self.B = 10*np.eye(model.state.nv_m)
+        self.df_dx =np.zeros([model.contacts.nc,model.state.ndx])
+        self.df_du =np.zeros([model.contacts.nc, model.actuation.nu])

@@ -5,7 +5,7 @@ import crocoddyl
 
 class IntegratedActionModelEulerASR(crocoddyl.ActionModelAbstract):
     def __init__(self, diffModel, timeStep=1e-3, withCostResiduals=True):
-        crocoddyl.ActionModelAbstract.__init__(self, diffModel.state, int(diffModel.state.nv/2), diffModel.nr)
+        crocoddyl.ActionModelAbstract.__init__(self, diffModel.state, 12, diffModel.nr)
         self.differential = diffModel
         self.withCostResiduals = withCostResiduals
         self.timeStep = timeStep

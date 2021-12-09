@@ -21,7 +21,7 @@ nu = ACTUATION.nu
 CONTACTS = crocoddyl.ContactModelMultiple(STATE, nu)
 for i in SUPPORT_FEET:
     xref = crocoddyl.FrameTranslation(i, np.array([0., 0., 0.]))
-    supportContactModel = aslr_to.Contact3DModelASLR(STATE, xref, nu, np.array([0., 50.]))
+    supportContactModel = crocoddyl.ContactModel3D(STATE, xref, nu, np.array([0., 50.]))
     CONTACTS.addContact(ROBOT_MODEL.frames[i].name + "_contact", supportContactModel)
 COSTS = crocoddyl.CostModelSum(STATE, nu)
 MODEL = aslr_to.DifferentialContactASLRFwdDynModel(STATE, ACTUATION, CONTACTS, COSTS)

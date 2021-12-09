@@ -37,14 +37,17 @@ class DDPASLR(crocoddyl.SolverAbstract):
         self.u_reg = regInit if regInit is not None else self.reg_min
         self.wasFeasible = False
         for i in range(maxiter):
+            print(i)
             recalc = True
             while True:
                 try:
                     self.computeDirection(recalc=recalc)
                 except ArithmeticError:
+                    print("insde recalc")
                     recalc = False
                     self.increaseRegularization()
                     if self.x_reg == self.reg_max:
+                        print("disnt work")
                         return self.xs, self.us, False
                     else:
                         continue
@@ -136,8 +139,11 @@ class DDPASLR(crocoddyl.SolverAbstract):
 
             if self.u_reg != 0:
                 self.Quu[t][range(model.nu), range(model.nu)] += self.u_reg
-
+            # print(self.Quu[t])
+            print("___________")
+            print(t)
             self.computeGains(t)
+            print("+++++++++++")
 
             self.Vx[t][:] = self.Qx[t] - np.dot(self.K[t].T, self.Qu[t])
             self.Vxx[t][:, :] = self.Qxx[t] - np.dot(self.Qxu[t], self.K[t])
@@ -150,9 +156,10 @@ class DDPASLR(crocoddyl.SolverAbstract):
             if not self.isFeasible:
                 self.Vx[t] += np.dot(self.Vxx[t], self.fs[t])
 
+            print("hello")
             raiseIfNan(self.Vxx[t], ArithmeticError('backward error'))
             raiseIfNan(self.Vx[t], ArithmeticError('backward error'))
-
+            print("PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP")
     def forwardPass(self, stepLength, warning='ignore'):
         xs, us = self.xs, self.us
         xtry, utry = self.xs_try, self.us_try
@@ -176,15 +183,16 @@ class DDPASLR(crocoddyl.SolverAbstract):
         return xtry, utry, ctry
 
     def computeGains(self, t):
-        try:
-            if self.Quu[t].shape[0] > 0:
-                Lb = scl.cho_factor(self.Quu[t])
-                self.K[t][:, :] = scl.cho_solve(Lb, self.Qux[t])
-                self.k[t][:] = scl.cho_solve(Lb, self.Qu[t])
-            else:
-                pass
-        except scl.LinAlgError:
-            raise ArithmeticError('backward error')
+        # try:
+        #     print("hey")
+        #     if self.Quu[t].shape[0] > 0:
+        Lb = scl.cho_factor(self.Quu[t])
+        self.K[t][:, :] = scl.cho_solve(Lb, self.Qux[t])
+        self.k[t][:] = scl.cho_solve(Lb, self.Qu[t])
+        #     else:
+        #         pass
+        # except scl.LinAlgError:
+        #     raise ArithmeticError('backward error')
 
     def increaseRegularization(self):
         self.x_reg *= self.reg_incFactor
