@@ -32,9 +32,7 @@ dt = 1e-2
 runningCostModel.addCost("uReg", uRegCost, 1e-2)
 runningCostModel.addCost("xReg", xRegCost, 1e-3)
 runningCostModel.addCost("xGoalR", xPendCost, 1e0)
-
 terminalCostModel.addCost("xGoal", xPendCost, 1e4)
-
 
 runningModel = crocoddyl.IntegratedActionModelEuler(
     crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, runningCostModel), dt)
