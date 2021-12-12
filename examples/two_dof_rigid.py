@@ -13,7 +13,7 @@ WITHDISPLAY = 'display' in sys.argv or 'CROCODDYL_DISPLAY' in os.environ
 WITHPLOT = 'plot' in sys.argv or 'CROCODDYL_PLOT' in os.environ
 
 #WITHPLOT =True
-two_dof = example_robot_data.loadAsrTwoDof()
+two_dof = example_robot_data.load('asr_twodof')
 robot_model = two_dof.model
 state = crocoddyl.StateMultibody(robot_model)
 actuation = crocoddyl.ActuationModelFull(state)
@@ -35,7 +35,7 @@ xRegCost = crocoddyl.CostModelResidual(state, xResidual)
 # Then let's added the running and terminal cost functions
 runningCostModel.addCost("gripperPose", goalTrackingCost, 1e1)
 runningCostModel.addCost("xReg", xRegCost, 1e-1)
-runningCostModel.addCost("uReg", uRegCost, 1e-1)
+runningCostModel.addCost("uReg", uRegCost, 1e2)
 terminalCostModel.addCost("gripperPose", goalTrackingCost, 5e4)
 
 dt = 1e-2
@@ -44,7 +44,7 @@ runningModel = crocoddyl.IntegratedActionModelEuler(
 terminalModel = crocoddyl.IntegratedActionModelEuler(
     crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, terminalCostModel), 0)
 
-T = 150
+T = 500
 
 q0 = np.array([.1,0])
 x0 = np.concatenate([q0,pinocchio.utils.zero(state.nv)])
