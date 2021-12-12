@@ -82,6 +82,31 @@ class DifferentialFreeASRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbstr
         # Computing the cost derivatives
         self.costs.calcDiff(data.costs, x, u)
 
+    def quasiStatic(self,data, x,u):
+
+        nq, nv = self.state.nq, self.state.nv
+        q_l = x[:int(nq/2)]
+        q_m = x[int(nq/2):nq]
+        v_l = x[-nv:-int(nv/2)]
+        v_m = x[-int(nv/2):]
+
+        # Check the velocity input is zero
+        try:
+            x.tail(nv).isZero()
+        except:
+            print("The velocity input should be zero for quasi-static to work.")
+        data.tmp_xstatic[:int(nq/2)] = q_l
+        data.tmp_xstatic[-int(nv/2):] *= 0
+        u *= 0 
+        data.tmp_ustatic[:] *= 0.
+
+        pinocchio.rnea(self.state.pinocchio, data.multibody.pinocchio, q_l, data.tmp_xstatic[-int(nv/2):], data.tmp_xstatic[-int(nv/2):])
+        self.actuation.calc(data.multibody.actuation, data.tmp_xstatic, u)
+        self.actuation.calcDiff(data.multibody.actuation, data.tmp_xstatic, u)
+
+        data.tmp_ustatic = np.dot(np.linalg.pinv(data.multibody.actuation.dtau_du), data.multibody.pinocchio.tau)
+        return data.tmp_ustatic 
+
 
     def createData(self):
         data = DifferentialFreeASRFwdDynamicsData(self)
