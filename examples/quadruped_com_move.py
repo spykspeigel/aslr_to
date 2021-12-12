@@ -27,28 +27,28 @@ gait = SimpleQuadrupedalGaitProblem(anymal.model, lfFoot, rfFoot, lhFoot, rhFoot
 timeStep = 1e-2
 numKnots = 50
 comGoTo = 0.35
-solver = aslr_to.DDPASLR(gait.createCoMProblem(x0, comGoTo, timeStep, numKnots))
+solver = crocoddyl.SolverFDDP(gait.createCoMProblem(x0, comGoTo, timeStep, numKnots))
 solver.problem.nthreads = 1
 cameraTF = [2.0, 2.68, 0.84, 0.2, 0.62, 0.72, 0.22]
-# if WITHDISPLAY and WITHPLOT:
-#     display = crocoddyl.GepettoDisplay(anymal, 4, 4, cameraTF, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])
-#     solver.setCallbacks([
-#         crocoddyl.CallbackLogger(),
-#         crocoddyl.CallbackVerbose(),
-#         crocoddyl.CallbackDisplay(display),
-#     ])
-# elif WITHDISPLAY:
-#     display = inv_dyn.GepettoDisplayCustom(anymal, 4, 4, cameraTF, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])
-#     solver.setCallbacks([crocoddyl.CallbackVerbose(), crocoddyl.CallbackDisplay(display)])
-# elif WITHPLOT:
-#     solver.setCallbacks([crocoddyl.CallbackLogger(), crocoddyl.CallbackVerbose()])
-# else:
-#     solver.setCallbacks([crocoddyl.CallbackVerbose()])
-
+if WITHDISPLAY and WITHPLOT:
+    display = crocoddyl.GepettoDisplay(anymal, 4, 4, cameraTF, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])
+    solver.setCallbacks([
+        crocoddyl.CallbackLogger(),
+        crocoddyl.CallbackVerbose(),
+        crocoddyl.CallbackDisplay(display),
+    ])
+elif WITHDISPLAY:
+    display = crocoddyl.GepettoDisplay(anymal, 4, 4, cameraTF, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])
+    solver.setCallbacks([crocoddyl.CallbackVerbose(), crocoddyl.CallbackDisplay(display)])
+elif WITHPLOT:
+    solver.setCallbacks([crocoddyl.CallbackLogger(), crocoddyl.CallbackVerbose()])
+else:
+    solver.setCallbacks([crocoddyl.CallbackVerbose()])
 solver.th_stop = 1e-5
+
 xs = [x0] * (solver.problem.T + 1)
 us = [np.zeros(12)] * solver.problem.T
-solver.setCallbacks([crocoddyl.CallbackVerbose()])
+
 solver.solve(xs, us, 100, False)
 # if WITHDISPLAY:
 #     display = inv_dyn.GepettoDisplayCustom(anymal, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])

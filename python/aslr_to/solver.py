@@ -62,8 +62,6 @@ class DDPASLR(crocoddyl.SolverAbstract):
                 self.dV_exp = a * (d1 + .5 * d2 * a)
                 if self.dV_exp >= 0:
                     if d1 < self.th_grad or not self.isFeasible or self.dV > self.th_acceptStep * self.dV_exp:
-                        # Accept step
-                        print("2nd check")
                         self.wasFeasible = self.isFeasible
                         self.setCandidate(self.xs_try, self.us_try, True)
                         self.cost = self.cost_try
@@ -74,12 +72,12 @@ class DDPASLR(crocoddyl.SolverAbstract):
                 self.increaseRegularization()
                 if self.x_reg == self.reg_max:
                     return self.xs, self.us, False
-                    print("4th check")
             self.stepLength = a
             self.iter = i
             self.stop = self.stoppingCriteria()
 
-            if self.getCallbacks is not None:
+            if self.getCallbacks() is not None:
+                print('hey')
                 [c(self) for c in self.getCallbacks()]
 
             if self.wasFeasible and self.stop < self.th_stop:
@@ -139,11 +137,7 @@ class DDPASLR(crocoddyl.SolverAbstract):
 
             if self.u_reg != 0:
                 self.Quu[t][range(model.nu), range(model.nu)] += self.u_reg
-            # print(self.Quu[t])
-            print("___________")
-            print(t)
             self.computeGains(t)
-            print("+++++++++++")
 
             self.Vx[t][:] = self.Qx[t] - np.dot(self.K[t].T, self.Qu[t])
             self.Vxx[t][:, :] = self.Qxx[t] - np.dot(self.Qxu[t], self.K[t])
@@ -156,10 +150,8 @@ class DDPASLR(crocoddyl.SolverAbstract):
             if not self.isFeasible:
                 self.Vx[t] += np.dot(self.Vxx[t], self.fs[t])
 
-            print("hello")
             raiseIfNan(self.Vxx[t], ArithmeticError('backward error'))
             raiseIfNan(self.Vx[t], ArithmeticError('backward error'))
-            print("PPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPPP")
     def forwardPass(self, stepLength, warning='ignore'):
         xs, us = self.xs, self.us
         xtry, utry = self.xs_try, self.us_try
