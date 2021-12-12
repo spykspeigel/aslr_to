@@ -204,7 +204,7 @@ class SimpleQuadrupedalGaitProblem:
         costModel = crocoddyl.CostModelSum(self.state, nu)
         for i in supportFootIds:
             cone = crocoddyl.FrictionCone(self.Rsurf, self.mu, 4, False)
-            coneResidual = inv_dyn.ResidualModelContactFrictionConeInvDynamics(self.state, i, cone, contactModel.nc,
+            coneResidual = crocoddyl.ResidualModelContactFrictionCone(self.state, i, cone, contactModel.nc,
                                                                                self.actuation.nu)
             coneActivation = crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(cone.lb, cone.ub))
             frictionCone = crocoddyl.CostModelResidual(self.state, coneActivation, coneResidual)
@@ -233,7 +233,7 @@ class SimpleQuadrupedalGaitProblem:
 
         # Creating the action model for the KKT dynamics with simpletic Euler
         # integration scheme
-        dmodel = inv_dyn.DifferentialActionModelContactInvDynamics(self.state, self.actuation, contactModel, costModel)
+        dmodel = aslr_to.DifferentialContactASLRFwdDynModel(self.state, self.actuation, contactModel, costModel)
         model = crocoddyl.IntegratedActionModelEuler(dmodel, 0.)
         return model
 
