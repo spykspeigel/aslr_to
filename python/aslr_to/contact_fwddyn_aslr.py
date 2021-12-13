@@ -3,13 +3,26 @@ import pinocchio
 import crocoddyl
 
 class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstract):
-    def __init__(self, state, actuation, contacts, costs, constraints=None):
+    def __init__(self, state, actuation, contacts, costs, K=None, B=None):
         nu =  actuation.nu 
         crocoddyl.DifferentialActionModelAbstract.__init__(self, state, nu, costs.nr)
-
         self.actuation = actuation
         self.costs = costs
         self.contacts = contacts
+
+        #K is the stiffness matrix
+        if K is None:
+            self.K = np.zeros([self.state.pinocchio.nv,self.state.pinocchio.nq])
+            nu = actuation.nu
+            self.K[-nu:,-nu:]= 10*np.eye(nu)
+        else:
+            self.K = K
+
+        #B is the motor intertia matrix
+        if B is None:
+            self.B = .01*np.eye(self.state.nv_m)   
+        else:
+            self.B = B 
 
     def calc(self, data, x, u):
         if len(x) != self.state.nx:
@@ -26,7 +39,7 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         q_m = x[nl:-self.state.nv_m]
 
         x_l = x[:nl]
-        data.tau_couple = np.dot(data.K, q_l-np.hstack([np.zeros(7),q_m]))
+        data.tau_couple = np.dot(self.K, q_l-np.hstack([np.zeros(7),q_m]))
 
         pinocchio.computeAllTerms(self.state.pinocchio, data.multibody.pinocchio, q_l, v_l)
         pinocchio.computeCentroidalDynamics(self.state.pinocchio, data.multibody.pinocchio, q_l, v_l)
@@ -34,7 +47,7 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         self.actuation.calc(data.multibody.actuation, x, u)
 
         self.contacts.calc(data.multibody.contacts, x_l)
-        data.Binv = np.linalg.inv(data.B)
+        data.Binv = np.linalg.inv(self.B)
         tau = data.multibody.actuation.tau
         JMinvJt_damping_=0
         pinocchio.forwardDynamics(self.state.pinocchio, data.multibody.pinocchio, - data.tau_couple, data.multibody.contacts.Jc[:nc,:self.state.nv_l],
@@ -72,22 +85,22 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         f_partial_dtau = data.Kinv[-nc:,:nv_l]
         f_partial_da = data.Kinv[-nc:,-nc:]
 
-        data.Fx[:nv_l,:nv_l] = -np.dot(a_partial_dtau,data.multibody.pinocchio.dtau_dq + data.K[:,-nv_l:])
+        data.Fx[:nv_l,:nv_l] = -np.dot(a_partial_dtau,data.multibody.pinocchio.dtau_dq + self.K[:,-nv_l:])
         data.Fx[:nv_l,nv_l:2*nv_l] = -np.dot(a_partial_dtau, data.multibody.pinocchio.dtau_dv)
-        data.Fx[:nv_l,2*nv_l:-nv_m] = np.dot(a_partial_dtau,data.K[:,-self.state.nv_m:])
+        data.Fx[:nv_l,2*nv_l:-nv_m] = np.dot(a_partial_dtau,self.K[:,-self.state.nv_m:])
 
         data.Fx[:nv_l,:2*nv_l] -=   np.dot(a_partial_da, data.multibody.contacts.da0_dx[:nc,:])
 
-        data.Fx[nv_l:, :nv_l] = np.dot(data.Binv,data.K[-self.actuation.nu:,-nv_l:])
+        data.Fx[nv_l:, :nv_l] = np.dot(data.Binv,self.K[-self.actuation.nu:,-nv_l:])
 
-        data.Fx[nv_l:, 2*nv_l:-nv_m] = -np.dot(data.Binv,data.K[-self.actuation.nu:, -self.actuation.nu:])
+        data.Fx[nv_l:, 2*nv_l:-nv_m] = -np.dot(data.Binv,self.K[-self.actuation.nu:, -self.actuation.nu:])
         
         #data.Fx += np.dot(a_partial_dtau,data.multibody.actuation.dtau_dx)
         data.Fu[nv_l:, :] = np.dot(data.Binv, data.multibody.actuation.dtau_du[nv_l:, :])
 
         data.df_dx[:nc, :nv_l] = np.dot(f_partial_dtau, data.multibody.pinocchio.dtau_dq)
         data.df_dx[:nc, nv_l:2*nv_l] = np.dot(f_partial_dtau, data.multibody.pinocchio.dtau_dv)
-        data.df_dx[:nc, 2*nv_l:-nv_m] = np.dot(f_partial_dtau,data.K[:,-self.state.nv_m:])
+        data.df_dx[:nc, 2*nv_l:-nv_m] = np.dot(f_partial_dtau, self.K[:,-self.state.nv_m:])
         data.df_dx[:nc, :nv_l] += np.dot(f_partial_da, data.multibody.contacts.da0_dx[:nc,:nv_l])
         data.df_dx[:nc, nv_l:2*nv_l] += np.dot(f_partial_da, data.multibody.contacts.da0_dx[:nc,nv_l:])
 
@@ -142,10 +155,7 @@ class DifferentialContactASLRFwdDynData(crocoddyl.DifferentialActionDataAbstract
         self.costs.shareMemory(self)
         self.Minv = None
         self.Kinv = None
-        self.K = np.zeros([model.state.pinocchio.nv,model.state.pinocchio.nq])
-        nu = model.actuation.nu
-        self.K[-nu:,-nu:]= 10*np.eye(nu)
-        self.B = .01*np.eye(model.state.nv_m)
+
         self.df_dx =np.zeros([model.contacts.nc,model.state.ndx])
         self.df_du =np.zeros([model.contacts.nc, model.actuation.nu])
 

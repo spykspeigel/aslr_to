@@ -23,6 +23,11 @@ class SimpleQuadrupedalGaitProblem:
         self.mu = 0.7
         self.Rsurf = np.eye(3)
 
+        self.K = np.zeros([self.state.pinocchio.nv,self.state.pinocchio.nq])
+        nu = self.actuation.nu
+        self.K[-nu:,-nu:]= 10*np.eye(nu)
+        self.B = .01*np.eye(self.state.nv_m)
+
     def createCoMProblem(self, x0, comGoTo, timeStep, numKnots):
         """ Create a shooting problem for a CoM forward/backward task.
 
@@ -165,7 +170,7 @@ class SimpleQuadrupedalGaitProblem:
 
         # Creating the action model for the KKT dynamics with simpletic Euler
         # integration scheme
-        dmodel = aslr_to.DifferentialContactASLRFwdDynModel(self.state, self.actuation, contactModel, costModel)
+        dmodel = aslr_to.DifferentialContactASLRFwdDynModel(self.state, self.actuation, contactModel, costModel, self.K, self.B)
         # print(dmodel.nu)
         model = crocoddyl.IntegratedActionModelEuler(dmodel, timeStep)
         return model
