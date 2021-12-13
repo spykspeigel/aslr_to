@@ -45,10 +45,10 @@ K = .1*np.eye(int(state.nv/2))
 B = .02*np.eye(int(state.nv/2))
 
 dt = 1e-2
-runningModel = crocoddyl.IntegratedActionModelEuler(
+runningModel = aslr_to.IntegratedActionModelEulerASR(
     aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, runningCostModel,K,B), dt)
 #runningModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
-terminalModel = crocoddyl.IntegratedActionModelEuler(
+terminalModel = aslr_to.IntegratedActionModelEulerASR(
     aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, terminalCostModel,K,B), 0)
 #terminalModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
 
@@ -72,7 +72,7 @@ xs = [x0] * (solver.problem.T + 1)
 us = solver.problem.quasiStatic([x0] * solver.problem.T)
 solver.th_stop = 1e-7
 # Solving it with the DDP algorithm
-solver.solve()
+solver.solve(xs, us, 100)
 
 print('Finally reached = ', solver.problem.terminalData.differential.multibody.pinocchio.oMf[robot_model.getFrameId(
     "EE")].translation.T)
