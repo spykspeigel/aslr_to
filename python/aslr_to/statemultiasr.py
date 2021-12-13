@@ -100,7 +100,6 @@ class StateMultiASR(crocoddyl.StateMultibody,crocoddyl.StateAbstract):
             return np.matrix(scl.block_diag(np.linalg.inv(Jdq_l), np.eye(self.nv_l), np.eye(self.nv_m), np.eye(self.nv_m)))
 
     def Jintegrate(self, x, dx, firstsecond=crocoddyl.Jcomponent.both):
-        print("inside integrate")
         if firstsecond == crocoddyl.Jcomponent.both:
             return [
                 self.Jintegrate(x, dx, crocoddyl.Jcomponent.first),

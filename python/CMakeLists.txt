@@ -2,8 +2,6 @@ SET(${PROJECT_NAME}_PYTHON_FILES
   __init__.py
   free_fwddyn_aslr.py
   contact_fwddyn_aslr.py
-  statemultibody_aslr.py
-  statefloating_aslr.py
   actuation_aslr.py
   floating_actuation.py
   residual_frame_placement.py

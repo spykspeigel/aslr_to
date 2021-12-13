@@ -175,16 +175,15 @@ class DDPASLR(crocoddyl.SolverAbstract):
         return xtry, utry, ctry
 
     def computeGains(self, t):
-        # try:
-        #     print("hey")
-        #     if self.Quu[t].shape[0] > 0:
-        Lb = scl.cho_factor(self.Quu[t])
-        self.K[t][:, :] = scl.cho_solve(Lb, self.Qux[t])
-        self.k[t][:] = scl.cho_solve(Lb, self.Qu[t])
-        #     else:
-        #         pass
-        # except scl.LinAlgError:
-        #     raise ArithmeticError('backward error')
+        try:
+            if self.Quu[t].shape[0] > 0:
+                Lb = scl.cho_factor(self.Quu[t])
+                self.K[t][:, :] = scl.cho_solve(Lb, self.Qux[t])
+                self.k[t][:] = scl.cho_solve(Lb, self.Qu[t])
+            else:
+                pass
+        except scl.LinAlgError:
+            raise ArithmeticError('backward error')
 
     def increaseRegularization(self):
         self.x_reg *= self.reg_incFactor

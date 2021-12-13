@@ -27,7 +27,7 @@ gait = SimpleQuadrupedalGaitProblem(anymal.model, lfFoot, rfFoot, lhFoot, rhFoot
 timeStep = 1e-2
 numKnots = 50
 comGoTo = 0.35
-solver = crocoddyl.SolverFDDP(gait.createCoMProblem(x0, comGoTo, timeStep, numKnots))
+solver = aslr_to.DDPASLR(gait.createCoMProblem(x0, comGoTo, timeStep, numKnots))
 solver.problem.nthreads = 1
 cameraTF = [2.0, 2.68, 0.84, 0.2, 0.62, 0.72, 0.22]
 if WITHDISPLAY and WITHPLOT:
@@ -47,9 +47,10 @@ else:
 solver.th_stop = 1e-5
 
 xs = [x0] * (solver.problem.T + 1)
+# us = solver.problem.quasiStatic([x0] * solver.problem.T)
 us = [np.zeros(12)] * solver.problem.T
 
-solver.solve(xs, us, 100, False)
+solver.solve(xs, us, 100, False, 1e-8)
 # if WITHDISPLAY:
 #     display = inv_dyn.GepettoDisplayCustom(anymal, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])
 #     while True:
