@@ -102,6 +102,39 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         
         self.costs.calcDiff(data.costs, x[:self.state.nx], u)
 
+    def quasistatic(self, data, x):
+        if len(x) != self.state.nx:
+            raise Exception("Invalid argument: u has wrong dimension (it should be " + self.state.nx)
+        
+        nq, nv, na, nc = self.state.nq, self.state.nv, self.actuation.nu, self.contacts.nc
+        data.tmp_xstatic[:nq] = x[:nq]
+        data.tmp_xstatic[nq:] *= 0.
+        data.tmp_ustatic[:] *= 0.
+
+        pinocchio.computeAllTerms(self.state.pinocchio, data.multibody.pinocchio, data.tmp_xstatic[:nq],
+                                  data.tmp_xstatic[nq:])
+        pinocchio.computeJointJacobians(self.state.pinocchio, data.multibody.pinocchio, data.tmp_xstatic[:nq])
+        pinocchio.rnea(self.state.pinocchio, data.multibody.pinocchio, data.tmp_xstatic[:nq], data.tmp_xstatic[nq:],
+                       data.tmp_xstatic[nq:])
+        self.actuation.calc(data.multibody.actuation, data.tmp_xstatic, data.tmp_ustatic[:])
+        self.actuation.calcDiff(data.multibody.actuation, data.tmp_xstatic, data.tmp_ustatic[:])
+        if nc != 0:
+            self.contacts.calc(data.multibody.contacts, data.tmp_xstatic)
+            data.tmp_Jstatic[:, :na] = data.multibody.actuation.dtau_du.reshape(nv, na)
+            data.tmp_Jstatic[:, na:na + nc] = data.multibody.contacts.Jc[:nc, :].T
+            data.tmp_ustatic[:] = np.dot(np.linalg.pinv(data.tmp_Jstatic[:, :na + nc]),
+                                                  data.multibody.pinocchio.tau)[:na]
+            # self.actuation.calc(data.multibody.actuation, data.tmp_xstatic, data.tmp_ustatic[nv:nv + na])
+            # data.tmp_ustatic[-nc:] = np.dot(np.linalg.pinv(data.multibody.contacts.Jc[:nc, :].T),
+            #                                 data.multibody.pinocchio.tau - data.multibody.actuation.tau)
+            data.multibody.pinocchio.tau[:] *= 0
+            return data.tmp_ustatic
+        else:
+            data.tmp_ustatic[nv:nv + na] = np.dot(np.linalg.pinv(data.multibody.actuation.dtau_du.reshape(nv, na)),
+                                                  data.multibody.pinocchio.tau)
+            data.multibody.pinocchio.tau[:] *= 0.
+            return data.tmp_ustatic
+
     def createData(self):
         data = DifferentialContactASLRFwdDynData(self)
         return data
@@ -123,3 +156,7 @@ class DifferentialContactASLRFwdDynData(crocoddyl.DifferentialActionDataAbstract
         self.B = 10*np.eye(model.state.nv_m)
         self.df_dx =np.zeros([model.contacts.nc,model.state.ndx])
         self.df_du =np.zeros([model.contacts.nc, model.actuation.nu])
+
+        self.tmp_xstatic = np.zeros(model.state.nx)
+        self.tmp_ustatic = np.zeros(model.nu)
+        self.tmp_Jstatic = np.zeros([model.state.nv, model.nu + model.contacts.nc_total])
