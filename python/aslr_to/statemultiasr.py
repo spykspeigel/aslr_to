@@ -4,7 +4,7 @@ import crocoddyl
 import scipy.linalg as scl
 
 
-#   state class for soft actuated robots. x = [q_l,q_m,v_l,v_m] . 
+#   state class for soft actuated robots. x = [q_l,v_l,q_m,v_m] . 
 #   q_l : configuration vector of link side
 #   q_m : configuration vector of motor side
 #   v_l : q_dot of link side 
@@ -86,7 +86,7 @@ class StateMultiASR(crocoddyl.StateMultibody,crocoddyl.StateAbstract):
             q_l = x2[:nq_l]
             dq_l = dx[:nv_l]
 
-            Jdq_l = pinocchio.dIntegrate(self.pinocchio, q_l, dq_l)[1]
+            Jdq_l = pinocchio.dIntegrate(self.pinocchio, q_l, dq_l)[0]
             return np.matrix(-scl.block_diag(np.linalg.inv(Jdq_l), np.eye(self.nv_l), np.eye(self.nv_m), np.eye(self.nv_m)))
         elif firstsecond == crocoddyl.Jcomponent.second:
             nq_l = self.pinocchio.nq
