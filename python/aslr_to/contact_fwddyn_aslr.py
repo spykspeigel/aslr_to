@@ -30,6 +30,7 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         if len(u) != self.nu:
             raise Exception("Invalid argument: u has wrong dimension (it should be " + str(self.nu)+"it is "+ str(len(u)))
 
+        
         nc = self.contacts.nc
         nq_l = self.state.nq_l
         nv_l = self.state.nv_l
@@ -79,25 +80,27 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         self.actuation.calcDiff(data.multibody.actuation, x, u)
         self.contacts.calcDiff(data.multibody.contacts, x_l)
 
+        #Extracting the TopLeft corner block diagonal matrix
         a_partial_dtau = data.Kinv[:nv_l,:nv_l]
         a_partial_da = data.Kinv[:nv_l,-nc:]
-
         f_partial_dtau = data.Kinv[-nc:,:nv_l]
         f_partial_da = data.Kinv[-nc:,-nc:]
 
+        #Jacobian for the link side coordinates  i.e. \dot\dot{q}
         data.Fx[:nv_l,:nv_l] = -np.dot(a_partial_dtau,data.multibody.pinocchio.dtau_dq + self.K[:,-nv_l:])
         data.Fx[:nv_l,nv_l:2*nv_l] = -np.dot(a_partial_dtau, data.multibody.pinocchio.dtau_dv)
         data.Fx[:nv_l,2*nv_l:-nv_m] = np.dot(a_partial_dtau,self.K[:,-self.state.nv_m:])
-
         data.Fx[:nv_l,:2*nv_l] -=   np.dot(a_partial_da, data.multibody.contacts.da0_dx[:nc,:])
 
+        #Jacobian for the link side coordinates  i.e. \dot\dot{\theta}
         data.Fx[nv_l:, :nv_l] = np.dot(data.Binv,self.K[-self.actuation.nu:,-nv_l:])
-
         data.Fx[nv_l:, 2*nv_l:-nv_m] = -np.dot(data.Binv,self.K[-self.actuation.nu:, -self.actuation.nu:])
         
+        #Jacobian w.r.t control inputs (only motor side part will be non-zero)
         #data.Fx += np.dot(a_partial_dtau,data.multibody.actuation.dtau_dx)
         data.Fu[nv_l:, :] = np.dot(data.Binv, data.multibody.actuation.dtau_du[nv_l:, :])
 
+        #computing the jacobian of contact forces (required with contact dependent costs)
         data.df_dx[:nc, :nv_l] = np.dot(f_partial_dtau, data.multibody.pinocchio.dtau_dq)
         data.df_dx[:nc, nv_l:2*nv_l] = np.dot(f_partial_dtau, data.multibody.pinocchio.dtau_dv)
         data.df_dx[:nc, 2*nv_l:-nv_m] = np.dot(f_partial_dtau, self.K[:,-self.state.nv_m:])
@@ -107,13 +110,15 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         data.df_du[:nc,: ] = -np.dot(f_partial_dtau[:,-self.state.nv_m:], data.multibody.actuation.dtau_du[nv_l:, :])
         self.contacts.updateAccelerationDiff(data.multibody.contacts, data.Fx[-nv_l:,:2*nv_l])
         self.contacts.updateForceDiff(data.multibody.contacts, data.df_dx[:nc,:2*nv_l], data.df_du[:nc,:])
-        
+
         self.costs.calcDiff(data.costs, x[:self.state.nx], u)
 
     def quasistatic(self, data, x):
+        #The quasistatic controls will be same as the rigid case as both velocity and acceleration is zero.
         if len(x) != self.state.nx:
             raise Exception("Invalid argument: u has wrong dimension (it should be " + self.state.nx)
         
+
         nq, nv, na, nc = self.state.nq, self.state.nv, self.actuation.nu, self.contacts.nc
         data.tmp_xstatic[:nq] = x[:nq]
         data.tmp_xstatic[nq:] *= 0.
@@ -156,9 +161,11 @@ class DifferentialContactASLRFwdDynData(crocoddyl.DifferentialActionDataAbstract
         self.Minv = None
         self.Kinv = None
 
+        #contact jacobians
         self.df_dx =np.zeros([model.contacts.nc,model.state.ndx])
         self.df_du =np.zeros([model.contacts.nc, model.actuation.nu])
 
+        #quasistatic variables
         self.tmp_xstatic = np.zeros(model.state.nx)
         self.tmp_ustatic = np.zeros(model.nu)
         self.tmp_Jstatic = np.zeros([model.state.nv, model.nu + model.contacts.nc_total])

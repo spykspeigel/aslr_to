@@ -25,8 +25,8 @@ class SimpleQuadrupedalGaitProblem:
 
         self.K = np.zeros([self.state.pinocchio.nv,self.state.pinocchio.nq])
         nu = self.actuation.nu
-        self.K[-nu:,-nu:]= 10*np.eye(nu)
-        self.B = .01*np.eye(self.state.nv_m)
+        self.K[-nu:,-nu:]= 1*np.eye(nu)
+        self.B = 1*np.eye(self.state.nv_m)
 
     def createCoMProblem(self, x0, comGoTo, timeStep, numKnots):
         """ Create a shooting problem for a CoM forward/backward task.
