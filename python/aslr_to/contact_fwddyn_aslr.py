@@ -59,7 +59,7 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         self.contacts.updateAcceleration(data.multibody.contacts, data.xout[:nv_l])
 
         self.contacts.updateForce(data.multibody.contacts, data.multibody.pinocchio.lambda_c)
-        self.costs.calc(data.costs, x[:self.state.nx], u)
+        self.costs.calc(data.costs, x, u)
         data.cost = data.costs.cost
 
     def calcDiff(self, data, x, u):
@@ -101,24 +101,24 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         data.Fu[nv_l:, :] = np.dot(data.Binv, data.multibody.actuation.dtau_du[nv_l:, :])
 
         #computing the jacobian of contact forces (required with contact dependent costs)
-        data.df_dx[:nc, :nv_l] = np.dot(f_partial_dtau, data.multibody.pinocchio.dtau_dq)
+        data.df_dx[:nc, :nv_l] = np.dot(f_partial_dtau, data.multibody.pinocchio.dtau_dq + self.K[:,-nv_l:])
         data.df_dx[:nc, nv_l:2*nv_l] = np.dot(f_partial_dtau, data.multibody.pinocchio.dtau_dv)
         data.df_dx[:nc, 2*nv_l:-nv_m] = np.dot(f_partial_dtau, self.K[:,-self.state.nv_m:])
-        data.df_dx[:nc, :nv_l] += np.dot(f_partial_da, data.multibody.contacts.da0_dx[:nc,:nv_l])
-        data.df_dx[:nc, nv_l:2*nv_l] += np.dot(f_partial_da, data.multibody.contacts.da0_dx[:nc,nv_l:])
-
-        data.df_du[:nc,: ] = -np.dot(f_partial_dtau[:,-self.state.nv_m:], data.multibody.actuation.dtau_du[nv_l:, :])
-        self.contacts.updateAccelerationDiff(data.multibody.contacts, data.Fx[-nv_l:,:2*nv_l])
+        data.df_dx[:nc, :2*nv_l] += np.dot(f_partial_da, data.multibody.contacts.da0_dx[:nc,:])
+        
+        data.df_dx[:nc, :] -= np.dot(f_partial_dtau, data.multibody.actuation.dtau_dx[:nv_l,:])
+        #data.df_du[:nc,: ] = -np.dot(f_partial_dtau[:,:], data.multibody.actuation.dtau_du[:, :])
+        
+        self.contacts.updateAccelerationDiff(data.multibody.contacts, data.Fx[:nv_l,:2*nv_l])
         self.contacts.updateForceDiff(data.multibody.contacts, data.df_dx[:nc,:2*nv_l], data.df_du[:nc,:])
 
-        self.costs.calcDiff(data.costs, x[:self.state.nx], u)
+        self.costs.calcDiff(data.costs, x, u)
 
     def quasistatic(self, data, x):
         #The quasistatic controls will be same as the rigid case as both velocity and acceleration is zero.
         if len(x) != self.state.nx:
             raise Exception("Invalid argument: u has wrong dimension (it should be " + self.state.nx)
         
-
         nq, nv, na, nc = self.state.nq, self.state.nv, self.actuation.nu, self.contacts.nc
         data.tmp_xstatic[:nq] = x[:nq]
         data.tmp_xstatic[nq:] *= 0.
