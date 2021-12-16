@@ -86,7 +86,7 @@ class StateMultiASR(crocoddyl.StateMultibody,crocoddyl.StateAbstract):
             q_l = x2[:nq_l]
             dq_l = dx[:nv_l]
 
-            Jdq_l = pinocchio.dIntegrate(self.pinocchio, q_l, dq_l)[0]
+            Jdq_l = pinocchio.dIntegrate(self.pinocchio, q_l, dq_l)[1]
             return np.matrix(-scl.block_diag(np.linalg.inv(Jdq_l), np.eye(self.nv_l), np.eye(self.nv_m), np.eye(self.nv_m)))
         elif firstsecond == crocoddyl.Jcomponent.second:
             nq_l = self.pinocchio.nq
@@ -121,10 +121,9 @@ class StateMultiASR(crocoddyl.StateMultibody,crocoddyl.StateAbstract):
 
         nv_l = self.pinocchio.nv
         if firstsecond == crocoddyl.Jcomponent.first:
-            Jin = pinocchio.dIntegrateTransport(self.pinocchio, x[:self.pinocchio.nq], dx[:nv_l], Jin[:nv_l,:], pinocchio.ArgumentPosition.ARG0)
+            Jin[:nv_l,:] = pinocchio.dIntegrateTransport(self.pinocchio, x[:self.pinocchio.nq], dx[:nv_l], Jin[:nv_l,:], pinocchio.ArgumentPosition.ARG0)
 
         elif firstsecond == crocoddyl.Jcomponent.second:
-            Jin = pinocchio.dIntegrateTransport(self.pinocchio, x[:self.pinocchio.nq], dx[:nv_l], Jin[:nv_l,:], pinocchio.ArgumentPosition.ARG1)
-        
+            Jin[:nv_l,:] = pinocchio.dIntegrateTransport(self.pinocchio, x[:self.pinocchio.nq], dx[:nv_l], Jin[:nv_l,:], pinocchio.ArgumentPosition.ARG1)
         return Jin
         
