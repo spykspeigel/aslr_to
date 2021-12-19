@@ -8,7 +8,7 @@ class SimpleQuadrupedalGaitProblem:
     def __init__(self, rmodel, lfFoot, rfFoot, lhFoot, rhFoot):
         self.rmodel = rmodel
         self.rdata = rmodel.createData()
-        self.state = aslr_to.StateMultiASR(self.rmodel)
+        self.state = crocoddyl.StateMultibody(self.rmodel)
         self.actuation = aslr_to.ASRFreeFloatingActuation(self.state)
         # Getting the frame id for all the legs
         self.lfFootId = self.rmodel.getFrameId(lfFoot)
@@ -25,8 +25,8 @@ class SimpleQuadrupedalGaitProblem:
 
         self.K = np.zeros([self.state.pinocchio.nv,self.state.pinocchio.nq])
         nu = self.actuation.nu
-        self.K[-nu:,-nu:]= 1*np.eye(nu)
-        self.B = 1*np.eye(self.state.nv_m)
+        self.K[-nu:,-nu:]= 10*np.eye(nu)
+        self.B = .01*np.eye(self.state.nv_m)
 
     def createCoMProblem(self, x0, comGoTo, timeStep, numKnots):
         """ Create a shooting problem for a CoM forward/backward task.
@@ -137,7 +137,7 @@ class SimpleQuadrupedalGaitProblem:
             costModel.addCost("comTrack", comTrack, 1e6)
         for i in supportFootIds:
             cone = crocoddyl.FrictionCone(self.Rsurf, self.mu, 4, False)
-            coneResidual = crocoddyl.ResidualModelContactFrictionCone(self.state, i, cone, contactModel.nc,
+            coneResidual = crocoddyl.ResidualModelContactFrictionCone(self.state, i, cone,
                                                                                self.actuation.nu)
             coneActivation = crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(cone.lb, cone.ub))
             frictionCone = crocoddyl.CostModelResidual(self.state, coneActivation, coneResidual)
@@ -161,12 +161,12 @@ class SimpleQuadrupedalGaitProblem:
         costModel.addCost("stateReg", stateReg, 1e1)
         costModel.addCost("ctrlReg", ctrlReg, 1e-1)
 
-        lb = np.concatenate([self.state.lb[1:self.state.nv + 1], self.state.lb[-self.state.nv:]])
-        ub = np.concatenate([self.state.ub[1:self.state.nv + 1], self.state.ub[-self.state.nv:]])
-        stateBoundsResidual = crocoddyl.ResidualModelState(self.state, nu)
-        stateBoundsActivation = crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(lb, ub))
-        stateBounds = crocoddyl.CostModelResidual(self.state, stateBoundsActivation, stateBoundsResidual)
-        costModel.addCost("stateBounds", stateBounds, 1e3)
+        # lb = np.concatenate([self.state.lb[1:self.state.nv + 1], self.state.lb[-self.state.nv:]])
+        # ub = np.concatenate([self.state.ub[1:self.state.nv + 1], self.state.ub[-self.state.nv:]])
+        # stateBoundsResidual = crocoddyl.ResidualModelState(self.state, nu)
+        # stateBoundsActivation = crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(lb, ub))
+        # stateBounds = crocoddyl.CostModelResidual(self.state, stateBoundsActivation, stateBoundsResidual)
+        # costModel.addCost("stateBounds", stateBounds, 1e3)
 
         # Creating the action model for the KKT dynamics with simpletic Euler
         # integration scheme
@@ -198,7 +198,7 @@ class SimpleQuadrupedalGaitProblem:
         """
         # Creating a 3D multi-contact model, and then including the supporting
         # foot
-        nu = self.actuation.nu + self.state.nv + 3 * len(supportFootIds)
+        nu = self.actuation.nu
         contactModel = crocoddyl.ContactModelMultiple(self.state, nu)
         for i in supportFootIds:
             supportContactModel = crocoddyl.ContactModel3D(self.state, i, np.array([0., 0., 0.]), nu,

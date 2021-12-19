@@ -7,7 +7,7 @@ import aslr_to
 from test_utils_ex import NUMDIFF_MODIFIER, assertNumDiff
 
 robot_model = example_robot_data.load("anymal").model
-state = aslr_to.StateMultiASR(robot_model)
+state = crocoddyl.StateMultibody(robot_model)
 state_nd = crocoddyl.StateNumDiff(state)
 x1 = state.rand()
 x2 = state.rand()
@@ -31,13 +31,13 @@ Jintsecond_nd = state_nd.Jintegrate(x1, dx, crocoddyl.Jcomponent.second)
 assertNumDiff( xi, x2, NUMDIFF_MODIFIER *
                 1e-4)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 
-assertNumDiff( state.diff(xi_test,x1), dx_test, NUMDIFF_MODIFIER *
+assertNumDiff( state.diff(x1,xi_test), dx_test, NUMDIFF_MODIFIER *
                 1e-4)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 
-assertNumDiff( Jfirst, np.array(Jfirst_nd.tolist()[0]), NUMDIFF_MODIFIER *
+assertNumDiff( np.array(Jfirst.tolist()[0]), np.array(Jfirst_nd.tolist()[0]), NUMDIFF_MODIFIER *
                 1e-10)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 
-assertNumDiff( Jsecond, np.array(Jsecond_nd.tolist()[0]), NUMDIFF_MODIFIER *
+assertNumDiff( np.array(Jsecond.tolist()[0]), np.array(Jsecond_nd.tolist()[0]), NUMDIFF_MODIFIER *
                 1e-10)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 
 assertNumDiff( Jintfirst, np.array(Jintfirst_nd.tolist()[0]), NUMDIFF_MODIFIER *

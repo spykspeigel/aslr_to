@@ -56,7 +56,7 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
 
         data.xout[:nv_l] = data.multibody.pinocchio.ddq
         data.xout[nv_l:] =  np.dot(data.Binv, tau[-self.state.nv_m:] + data.tau_couple[-self.state.nv_m:])
-        self.contacts.updateAcceleration(data.multibody.contacts, data.xout[:nv_l])
+        self.contacts.updateAcceleration(data.multibody.contacts, data.xout)
 
         self.contacts.updateForce(data.multibody.contacts, data.multibody.pinocchio.lambda_c)
         self.costs.calc(data.costs, x, u)
@@ -79,38 +79,41 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         data.Kinv = pinocchio.getKKTContactDynamicMatrixInverse(self.state.pinocchio, data.multibody.pinocchio, data.multibody.contacts.Jc[:nc,:])
         self.actuation.calcDiff(data.multibody.actuation, x, u)
         self.contacts.calcDiff(data.multibody.contacts, x_l)
+        
 
         #Extracting the TopLeft corner block diagonal matrix
         a_partial_dtau = data.Kinv[:nv_l,:nv_l]
         a_partial_da = data.Kinv[:nv_l,-nc:]
-        f_partial_dtau = data.Kinv[-nc:,:nv_l]
-        f_partial_da = data.Kinv[-nc:,-nc:]
+        f_partial_dtau = data.Kinv[nv_l:,:nv_l]
+        f_partial_da = data.Kinv[nv_l:,nv_l:]
 
         #Jacobian for the link side coordinates  i.e. \dot\dot{q}
         data.Fx[:nv_l,:nv_l] = -np.dot(a_partial_dtau,data.multibody.pinocchio.dtau_dq + self.K[:,-nv_l:])
         data.Fx[:nv_l,nv_l:2*nv_l] = -np.dot(a_partial_dtau, data.multibody.pinocchio.dtau_dv)
         data.Fx[:nv_l,2*nv_l:-nv_m] = np.dot(a_partial_dtau,self.K[:,-self.state.nv_m:])
-        data.Fx[:nv_l,:2*nv_l] -=   np.dot(a_partial_da, data.multibody.contacts.da0_dx[:nc,:])
+        data.Fx[:nv_l,:2*nv_l] -=   np.dot(a_partial_da, data.multibody.contacts.da0_dx[:nc,:2*nv_l])
 
         #Jacobian for the link side coordinates  i.e. \dot\dot{\theta}
         data.Fx[nv_l:, :nv_l] = np.dot(data.Binv,self.K[-self.actuation.nu:,-nv_l:])
         data.Fx[nv_l:, 2*nv_l:-nv_m] = -np.dot(data.Binv,self.K[-self.actuation.nu:, -self.actuation.nu:])
         
         #Jacobian w.r.t control inputs (only motor side part will be non-zero)
-        #data.Fx += np.dot(a_partial_dtau,data.multibody.actuation.dtau_dx)
+
         data.Fu[nv_l:, :] = np.dot(data.Binv, data.multibody.actuation.dtau_du[nv_l:, :])
 
         #computing the jacobian of contact forces (required with contact dependent costs)
         data.df_dx[:nc, :nv_l] = np.dot(f_partial_dtau, data.multibody.pinocchio.dtau_dq + self.K[:,-nv_l:])
         data.df_dx[:nc, nv_l:2*nv_l] = np.dot(f_partial_dtau, data.multibody.pinocchio.dtau_dv)
-        data.df_dx[:nc, 2*nv_l:-nv_m] = np.dot(f_partial_dtau, self.K[:,-self.state.nv_m:])
-        data.df_dx[:nc, :2*nv_l] += np.dot(f_partial_da, data.multibody.contacts.da0_dx[:nc,:])
-        
+        data.df_dx[:nc, 2*nv_l:-nv_m] = -np.dot(f_partial_dtau,  self.K[:,-self.state.nv_m:])
+        data.df_dx[:nc, :2*nv_l] += np.dot(f_partial_da, data.multibody.contacts.da0_dx[:nc,:2*nv_l])
+        print("___________________")
+        print(data.multibody.contacts.da0_dx[:,36:])
+        print("___________________")
         data.df_dx[:nc, :] -= np.dot(f_partial_dtau, data.multibody.actuation.dtau_dx[:nv_l,:])
         #data.df_du[:nc,: ] = -np.dot(f_partial_dtau[:,:], data.multibody.actuation.dtau_du[:, :])
         
-        self.contacts.updateAccelerationDiff(data.multibody.contacts, data.Fx[:nv_l,:2*nv_l])
-        self.contacts.updateForceDiff(data.multibody.contacts, data.df_dx[:nc,:2*nv_l], data.df_du[:nc,:])
+        self.contacts.updateAccelerationDiff(data.multibody.contacts, data.Fx)
+        self.contacts.updateForceDiff(data.multibody.contacts, data.df_dx, data.df_du)
 
         self.costs.calcDiff(data.costs, x, u)
 
