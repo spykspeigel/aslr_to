@@ -41,7 +41,7 @@ class StateMultibodyASR(crocoddyl.StateAbstract):
         v1_l = x1[-nv:-int(nv/2)]
         v1_m = x1[-int(nv/2):]
         dq_l = pinocchio.difference(self.pinocchio, q0_l, q1_l)
-        dq_m = pinocchio.difference(self.pinocchio, q0_m, q1_m)
+        dq_m = q1_m - q0_m
         return np.concatenate([dq_l, dq_m, v1_l - v0_l, v1_m - v0_m])
 
     def integrate(self, x, dx):
@@ -56,7 +56,7 @@ class StateMultibodyASR(crocoddyl.StateAbstract):
         dv_l = dx[-nv:-int(nv/2)]
         dv_m = dx[-int(nv/2):]
         qn_l = pinocchio.integrate(self.pinocchio, q_l, dq_l)
-        qn_m = pinocchio.integrate(self.pinocchio, q_m, dq_m)
+        qn_m =  q_m+ dq_m
 
         return np.concatenate([qn_l, qn_m, v_l + dv_l, v_m + dv_m])
 
@@ -75,8 +75,8 @@ class StateMultibodyASR(crocoddyl.StateAbstract):
             dq_m = dx[int(nq/2):nq]
 
             Jdq_l = pinocchio.dIntegrate(self.pinocchio, q_l, dq_l)[1]
-            Jdq_m = pinocchio.dIntegrate(self.pinocchio, q_m, dq_m)[1]
-            return np.matrix(-scl.block_diag(np.linalg.inv(Jdq_l), np.linalg.inv(Jdq_m), np.eye(nv)))
+            # Jdq_m = pinocchio.dIntegrate(self.pinocchio, q_m, dq_m)[1]
+            return np.matrix(-scl.block_diag(np.linalg.inv(Jdq_l), np.eye(nv+int(nq/2))))
         elif firstsecond == crocoddyl.Jcomponent.second:
             nq=self.nq
             nv=self.nv
@@ -86,8 +86,8 @@ class StateMultibodyASR(crocoddyl.StateAbstract):
             dq_l = dx[:int(nq/2)]
             dq_m = dx[int(nq/2):nq]
             Jdq_l = pinocchio.dIntegrate(self.pinocchio, q_l, dq_l)[1]
-            Jdq_m = pinocchio.dIntegrate(self.pinocchio, q_m, dq_m)[1]
-            return np.matrix(scl.block_diag(np.linalg.inv(Jdq_l),np.linalg.inv(Jdq_m), np.eye(self.nv)))
+            # Jdq_m = pinocchio.dIntegrate(self.pinocchio, q_m, dq_m)[1]
+            return np.matrix(scl.block_diag(np.linalg.inv(Jdq_l), np.eye(self.nv+int(nq/2))))
 
     def Jintegrate(self, x, dx, firstsecond=crocoddyl.Jcomponent.both):
         if firstsecond == crocoddyl.Jcomponent.both:
@@ -102,8 +102,8 @@ class StateMultibodyASR(crocoddyl.StateAbstract):
         dq_l = dx[:int(nq/2)]
         dq_m = dx[int(nq/2):nq]
         Jq_l, Jdq_l = pinocchio.dIntegrate(self.pinocchio, q_l, dq_l)
-        Jq_m, Jdq_m = pinocchio.dIntegrate(self.pinocchio, q_m, dq_m)
+        # Jq_m, Jdq_m = pinocchio.dIntegrate(self.pinocchio, q_m, dq_m)
         if firstsecond == crocoddyl.Jcomponent.first:
-            return np.matrix(scl.block_diag(np.linalg.inv(Jq_l), np.linalg.inv(Jq_m), np.eye(nv)))
+            return np.matrix(scl.block_diag(Jq_l,np.eye(nv+int(nq/2))))
         elif firstsecond == crocoddyl.Jcomponent.second:
-            return np.matrix(scl.block_diag(np.linalg.inv(Jdq_l), np.linalg.inv(Jdq_m), np.eye(nv)))
+            return np.matrix(scl.block_diag(Jdq_l, np.eye(nv+int(nq/2))))

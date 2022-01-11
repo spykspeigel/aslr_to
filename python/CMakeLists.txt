@@ -1,6 +1,7 @@
 SET(${PROJECT_NAME}_PYTHON_FILES
   __init__.py
   free_fwddyn_aslr.py
+  free_fwddyn_vsa.py
   contact_fwddyn.py
   statemultibody_aslr.py
   actuation_aslr.py

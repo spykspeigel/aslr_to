@@ -24,9 +24,9 @@ class ASRFreeFwdDynamicsTestCase(unittest.TestCase):
         self.MODEL.calcDiff(self.DATA, self.x, self.u)
         MODEL_ND.calc(DATA_ND, self.x, self.u)
         MODEL_ND.calcDiff(DATA_ND, self.x, self.u)
-        assertNumDiff(self.DATA.Fx, DATA_ND.Fx, NUMDIFF_MODIFIER *
-                      MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
         assertNumDiff(self.DATA.Fu, DATA_ND.Fu, NUMDIFF_MODIFIER *
+                      MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
+        assertNumDiff(self.DATA.Fx, DATA_ND.Fx, NUMDIFF_MODIFIER *
                       MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
         assertNumDiff(self.DATA.Lx, DATA_ND.Lx, NUMDIFF_MODIFIER *
                       MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
@@ -50,6 +50,14 @@ class ASRFreeDynamicsTalosTest(ASRFreeFwdDynamicsTestCase):
     COSTS = crocoddyl.CostModelSum(STATE, nu)
     MODEL = aslr_to.DifferentialFreeASRFwdDynamicsModel(STATE, ACTUATION, COSTS)
 
+class VSAFreeDynamicsTalosTest(ASRFreeFwdDynamicsTestCase):
+    ROBOT_MODEL = example_robot_data.load('talos_arm').model
+    STATE = aslr_to.StateMultibodyASR(ROBOT_MODEL)
+    ACTUATION = aslr_to.ASRActuation(STATE)
+    nu = ACTUATION.nu +1
+    COSTS = crocoddyl.CostModelSum(STATE, nu)
+    MODEL = aslr_to.DifferentialFreeFwdDynamicsModelVSA(STATE, ACTUATION, COSTS)
+
 class ASRFreeDynamicsDoublePendTest(ASRFreeFwdDynamicsTestCase):
     ROBOT_MODEL = example_robot_data.load('double_pendulum').model
     STATE = aslr_to.StateMultibodyASR(ROBOT_MODEL)
@@ -60,7 +68,7 @@ class ASRFreeDynamicsDoublePendTest(ASRFreeFwdDynamicsTestCase):
 
 
 if __name__ == '__main__':
-    test_classes_to_run = [ASRFreeDynamicsTalosTest,ASRFreeDynamicsDoublePendTest]
+    test_classes_to_run = [ASRFreeDynamicsTalosTest, VSAFreeDynamicsTalosTest, ASRFreeDynamicsDoublePendTest]
     loader = unittest.TestLoader()
     suites_list = []
     for test_class in test_classes_to_run:

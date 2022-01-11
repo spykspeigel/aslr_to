@@ -7,7 +7,7 @@ class ASRActuation(crocoddyl.ActuationModelAbstract):
         crocoddyl.ActuationModelAbstract.__init__(self, state, int(state.nv/2))
 
     def calc(self, data, x, u):
-        data.tau[self.nu:] = u
+        data.tau[int(self.state.nv/2):] = u[:self.nu]
 
     def calcDiff(self, data, x, u):
-        data.dtau_du[self.nu:, :] =  np.eye(self.nu)
+        data.dtau_du[int(self.state.nv/2):, :] =  np.eye(self.nu)

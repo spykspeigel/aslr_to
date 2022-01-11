@@ -1,6 +1,7 @@
 from .statemultibody_aslr import (StateMultibodyASR)
 from .contact_fwddyn import (DifferentialContactASLRFwdDynModel, DifferentialContactASLRFwdDynData)
 from .free_fwddyn_aslr import (DifferentialFreeASRFwdDynamicsModel,DifferentialFreeASRFwdDynamicsData)
+from .free_fwddyn_vsa import (DifferentialFreeFwdDynamicsModelVSA, DifferentialFreeFwdDynamicsDataVSA)
 from .residual_frame_placement import (ResidualModelFramePlacementASR,ResidualDataFramePlacementASR)
 from .integrated_action import (IntegratedActionModelEulerASR, IntegratedActionDataEulerASR)
 from .actuation_aslr import ASRActuation
@@ -17,8 +18,8 @@ def u_squared(log):
     u1_sqaured = 0
     u2_sqaured = 0
     for i in range(len(log.us)):
-        u1_sqaured += log.us[i][0]**2
-        u2_sqaured += log.us[i][1]**2
+        u1_sqaured += log.us[i][-2]**2
+        u2_sqaured += log.us[i][-1]**2
     return [u1_sqaured, u2_sqaured]
 
 def plotOCSolution(xs=None, us=None, figIndex=1, show=True, figTitle=""):

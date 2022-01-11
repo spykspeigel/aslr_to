@@ -18,8 +18,7 @@ robot_model = two_dof.model
 robot_model.gravity.linear = np.array([0,-9.81,0])
 state = aslr_to.StateMultibodyASR(robot_model)
 actuation = aslr_to.ASRActuation(state)
-
-nu = actuation.nu
+nu = actuation.nu +1
 
 runningCostModel = crocoddyl.CostModelSum(state,nu)
 terminalCostModel = crocoddyl.CostModelSum(state,nu)
@@ -27,8 +26,11 @@ terminalCostModel = crocoddyl.CostModelSum(state,nu)
 xActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e0] *2 + [0] *2 + [1e0] * robot_model.nv + [0]* robot_model.nv))
 xResidual = crocoddyl.ResidualModelState(state, state.zero(), nu)
 xRegCost = crocoddyl.CostModelResidual(state, xActivation, xResidual)
+# uResidual = crocoddyl.ResidualModelControl(state, nu)
+uActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e-1] + [1e0] * 2 ))
 uResidual = crocoddyl.ResidualModelControl(state, nu)
-uRegCost = crocoddyl.CostModelResidual(state, uResidual)
+uRegCost = crocoddyl.CostModelResidual(state, uActivation,uResidual)
+# uRegCost = crocoddyl.CostModelResidual(state, uResidual)
 
 framePlacementResidual = aslr_to.ResidualModelFramePlacementASR(state, robot_model.getFrameId("EE"),
                                                                pinocchio.SE3(np.eye(3), np.array([.01, .2, .18])), nu)
@@ -37,31 +39,34 @@ goalTrackingCost = crocoddyl.CostModelResidual(state, framePlacementResidual)
 
 # Then let's added the running and terminal cost functions
 runningCostModel.addCost("gripperPose", goalTrackingCost, 1e0)
-runningCostModel.addCost("xReg", xRegCost, 1e-1)
-runningCostModel.addCost("uReg", uRegCost, 1e-1)
-terminalCostModel.addCost("gripperPose", goalTrackingCost, 4e4)
+runningCostModel.addCost("xReg", xRegCost, 1e-2)
+runningCostModel.addCost("uReg", uRegCost, 1e0)
+terminalCostModel.addCost("gripperPose", goalTrackingCost, 5e3)
 
 
-K = 10*np.eye(int(state.nv/2))
 B = .02*np.eye(int(state.nv/2))
 
 dt = 1e-2
 runningModel = aslr_to.IntegratedActionModelEulerASR(
-    aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, runningCostModel,K,B), dt)
+    aslr_to.DifferentialFreeFwdDynamicsModelVSA(state, actuation, runningCostModel,B), dt)
 #runningModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
 terminalModel = aslr_to.IntegratedActionModelEulerASR(
-    aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, terminalCostModel,K,B), 0)
+    aslr_to.DifferentialFreeFwdDynamicsModelVSA(state, actuation, terminalCostModel,B), 0)
 #terminalModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
+l_lim_0=0
+runningModel.u_lb = np.array([0, -50, -50])
+runningModel.u_ub = np.array([100, 50, 50])
+T = 100
 
-T = 200
-
-q0 = np.array([.1,0])
-x0 = np.concatenate([q0,q0,pinocchio.utils.zero(state.nv)])
+q0 = np.array([.1,.0])
+x0 = np.concatenate([q0,np.zeros(2),pinocchio.utils.zero(state.nv)])
 
 problem = crocoddyl.ShootingProblem(x0, [runningModel] * T, terminalModel)
 
+
+
 # Creating the DDP solver for this OC problem, defining a logger
-solver = crocoddyl.SolverFDDP(problem)
+solver = crocoddyl.SolverBoxDDP(problem)
 cameraTF = [2., 2.68, 0.54, 0.2, 0.62, 0.72, 0.22]
 
 if WITHDISPLAY:
@@ -70,10 +75,10 @@ if WITHDISPLAY:
 solver.setCallbacks([crocoddyl.CallbackLogger(), crocoddyl.CallbackVerbose() ])
 
 xs = [x0] * (solver.problem.T + 1)
-us = solver.problem.quasiStatic([x0] * solver.problem.T)
+#us = solver.problem.quasiStatic([x0] * solver.problem.T)
 solver.th_stop = 1e-7
 # Solving it with the DDP algorithm
-solver.solve(xs, us, 100)
+solver.solve([], [], 500)
 
 print('Finally reached = ', solver.problem.terminalData.differential.multibody.pinocchio.oMf[robot_model.getFrameId(
     "EE")].translation.T)
