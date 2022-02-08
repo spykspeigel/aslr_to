@@ -5,7 +5,7 @@ import crocoddyl
 
 class DifferentialFreeFwdDynamicsModelVSA(crocoddyl.DifferentialActionModelAbstract):
     def __init__(self, state, actuationModel, costModel, B=None):
-        crocoddyl.DifferentialActionModelAbstract.__init__(self, state, 2*actuationModel.nu, costModel.nr)
+        crocoddyl.DifferentialActionModelAbstract.__init__(self, state, actuationModel.nu+1, costModel.nr)
         self.actuation = actuationModel
         self.costs = costModel
         # if K is None:
@@ -15,12 +15,11 @@ class DifferentialFreeFwdDynamicsModelVSA(crocoddyl.DifferentialActionModelAbstr
         if B is None:
             self.B = 1e-3*np.eye(int(state.nv/2))
         else:
-            self.B = B
-
+            self.B = B 
     def calc(self, data, x, u=None):
         if u is None:
             u=np.zeros(self.nu)
-            u[int(self.nu/2):]=3*np.ones(int(self.nu/2))
+            u[0]=1
         nq=self.state.nq
         nv=self.state.nv
         nq_l = int(nq/2)
@@ -31,7 +30,7 @@ class DifferentialFreeFwdDynamicsModelVSA(crocoddyl.DifferentialActionModelAbstr
         v_m = x[-nv_l:]
         x_m = np.hstack([q_m,v_m])
 
-        K = np.diag(u[int(self.nu/2):])
+        K = (u[0])*np.eye(nv_l)
         self.actuation.calc(data.actuation, x_m, u)
         tau = data.actuation.tau
         data.tau_couple = np.dot(K, q_l-q_m)
@@ -41,10 +40,10 @@ class DifferentialFreeFwdDynamicsModelVSA(crocoddyl.DifferentialActionModelAbstr
         data.M = data.pinocchio.M
         data.Minv = np.linalg.inv(data.M)
         data.Binv = np.linalg.inv(self.B)
-        data.xout[:int(nv/2)] = np.dot(data.Minv, ( -data.pinocchio.nle - data.tau_couple))
+        data.xout[:int(nv/2)] = np.dot(data.Minv, ( - data.pinocchio.nle - data.tau_couple))
 
         # Computing the motor side dynamics
-        data.xout[int(nv/2):] = np.dot(data.Binv, u[:int(self.nu/2)] + data.tau_couple)
+        data.xout[int(nv/2):] = np.dot(data.Binv, u[1:] + data.tau_couple)
 
         # Computing the cost value and residuals
         pinocchio.forwardKinematics(self.state.pinocchio, data.pinocchio, q_l, v_l)
@@ -59,7 +58,7 @@ class DifferentialFreeFwdDynamicsModelVSA(crocoddyl.DifferentialActionModelAbstr
     def calcDiff(self, data, x, u):
         if u is None:
             u=np.zeros(self.nu)
-            u[int(self.nu/2):]=3*np.ones(int(self.nu/2))
+            u[0]=1
         nq, nv = self.state.nq, self.state.nv
         nq_l = int(nq/2)
         nv_l = int(nv/2)
@@ -70,7 +69,7 @@ class DifferentialFreeFwdDynamicsModelVSA(crocoddyl.DifferentialActionModelAbstr
         x_m = np.hstack([q_m,v_m])
         x_m = np.hstack([q_m,v_m])
 
-        K = np.diag(u[int(self.nu/2):])
+        K = (u[0])*np.eye(nv_l)
         # Computing the actuation derivatives
         self.actuation.calcDiff(data.actuation, x_m, u)
         tau = data.actuation.tau
@@ -86,10 +85,10 @@ class DifferentialFreeFwdDynamicsModelVSA(crocoddyl.DifferentialActionModelAbstr
         data.Fx[int(nv/2):, int(nv/2):nv] = -np.dot(data.Binv,K)
         
         # if self.actuation.nu >1:
-        data.Fu[:int(nv/2), int(nv/2):] = data.Minv*(-q_l+q_m)
-        data.Fu[int(nv/2):, int(nv/2):] = data.Binv* (q_l-q_m)
-
-        data.Fu[int(nv/2):, :int(nv/2)] = np.dot(data.Binv,data.actuation.dtau_du[int(nv/2):,:])
+        data.Fu[:int(nv/2), 0] = np.dot(data.Minv,-q_l+q_m)
+        data.Fu[int(nv/2):, 0] = np.dot(data.Binv, q_l-q_m)
+        # print(data.actuation.dtau_du)
+        data.Fu[int(nv/2):, 1:] = np.dot(data.Binv,data.actuation.dtau_du[int(nv/2):,:])
         # Computing the cost derivatives
         self.costs.calcDiff(data.costs, x, u)
 
@@ -115,6 +114,7 @@ class DifferentialFreeFwdDynamicsModelVSA(crocoddyl.DifferentialActionModelAbstr
         self.actuation.calcDiff(data.actuation, data.tmp_xstatic, data.tmp_ustatic)
         data.tmp_ustatic = np.dot(np.linalg.pinv(data.actuation.dtau_du).T, data.multibody.pinocchio.tau)
         return data.tmp_ustatic 
+
 
     def createData(self):
         data = DifferentialFreeFwdDynamicsDataVSA(self)

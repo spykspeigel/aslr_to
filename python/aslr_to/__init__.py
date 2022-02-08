@@ -4,6 +4,8 @@ from .free_fwddyn_aslr import (DifferentialFreeASRFwdDynamicsModel,DifferentialF
 from .free_fwddyn_vsa import (DifferentialFreeFwdDynamicsModelVSA, DifferentialFreeFwdDynamicsDataVSA)
 from .residual_frame_placement import (ResidualModelFramePlacementASR,ResidualDataFramePlacementASR)
 from .integrated_action import (IntegratedActionModelEulerASR, IntegratedActionDataEulerASR)
+from .stiffness_cost import (CostModelStiffness, CostDataStiffness)
+from .vsa_asr_actuation import VSAASRActuation
 from .actuation_aslr import ASRActuation
 from .solver import DDPASLR
 import numpy as np
@@ -13,14 +15,20 @@ import time
 import warnings
 import matplotlib.pyplot as plt
 
-
 def u_squared(log):
     u1_sqaured = 0
     u2_sqaured = 0
+    u3_sqaured = 0
+    u4_sqaured = 0
     for i in range(len(log.us)):
-        u1_sqaured += log.us[i][-2]**2
-        u2_sqaured += log.us[i][-1]**2
-    return [u1_sqaured, u2_sqaured]
+        u1_sqaured += log.us[i][0]**2
+        u2_sqaured += log.us[i][1]**2
+        try:
+            u3_sqaured += log.us[i][2]**2
+            u4_sqaured += log.us[i][3]**2
+        except:
+            return [u1_sqaured, u2_sqaured]        
+    return [u1_sqaured, u2_sqaured, u3_sqaured, u4_sqaured]
 
 def plotOCSolution(xs=None, us=None, figIndex=1, show=True, figTitle=""):
     import matplotlib.pyplot as plt
@@ -129,5 +137,5 @@ class ActuationDataDoublePendulum(crocoddyl.ActuationDataAbstract):
         if model.actLink == 1:
             self.S[-model.nu,-model.nu]=1
         else:
-            self.S[-1,-1]=1
+            self.S[0,0]=1
 
