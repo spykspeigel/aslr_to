@@ -44,7 +44,7 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         # state_diff = pinocchio.difference(self.state.pinocchio,  np.hstack([q_l[:7],q_m]),q_l)
         # tau_couple = np.dot(self.K,state_diff)
         tau_couple = np.zeros(nv_l)
-        tau_couple[-self.state.nv_m:] = np.dot(self.K[-nu:,-nu:], q_l[-self.state.nv_m:]-q_m)
+        tau_couple[-self.state.nv_m:] = np.dot(self.K[-self.nu:,-self.nu:], q_l[-self.state.nv_m:]-q_m)
 
         pinocchio.updateFramePlacements(self.state.pinocchio, data.multibody.pinocchio)
         pinocchio.computeAllTerms(self.state.pinocchio, data.multibody.pinocchio, q_l, v_l)
@@ -80,8 +80,8 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
                                          data.multibody.contacts.fext)
         data.Kinv = pinocchio.getKKTContactDynamicMatrixInverse(self.state.pinocchio, data.multibody.pinocchio, data.multibody.contacts.Jc[:nc,:2*nv_l])
         self.actuation.calcDiff(data.multibody.actuation, x, u)
-        self.contacts.calcDiff(data.multibody.contacts, x_l)
 
+        self.contacts.calcDiff(data.multibody.contacts, x_l)
         #Extracting the TopLeft corner block diagonal matrix
         a_partial_dtau = data.Kinv[:nv_l,:nv_l]
         a_partial_da = data.Kinv[:nv_l,-nc:]
