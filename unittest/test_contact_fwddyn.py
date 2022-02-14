@@ -68,7 +68,7 @@ assertNumDiff( DATA.Fu, DATA_ND.Fu, NUMDIFF_MODIFIER *
 assertNumDiff( DATA.Fx, DATA_ND.Fx, NUMDIFF_MODIFIER *
                 MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 
-assertNumDiff(DATA.Lx[:18], DATA_ND.Lx[:18], NUMDIFF_MODIFIER *
+assertNumDiff(DATA.Lx, DATA_ND.Lx, NUMDIFF_MODIFIER *
                 MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 assertNumDiff(DATA.Lu, DATA_ND.Lu, NUMDIFF_MODIFIER *
                 MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
