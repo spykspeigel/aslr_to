@@ -55,7 +55,7 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         tau = data.multibody.actuation.tau
 
         JMinvJt_damping_=0
-        pinocchio.forwardDynamics(self.state.pinocchio, data.multibody.pinocchio, -data.multibody.actuation.tau[:nv_l], data.multibody.contacts.Jc[:nc,:nv_l],
+        pinocchio.forwardDynamics(self.state.pinocchio, data.multibody.pinocchio, -tau_couple, data.multibody.contacts.Jc[:nc,:nv_l],
                         data.multibody.contacts.a0, JMinvJt_damping_)
         data.xout[:nv_l] = data.multibody.pinocchio.ddq
         data.xout[nv_l:] = np.dot(data.Binv, u + tau_couple[-self.state.nv_m:])

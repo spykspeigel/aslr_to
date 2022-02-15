@@ -5,6 +5,7 @@ SET(${PROJECT_NAME}_PYTHON_FILES
   residual_frame_placement.py
   solver.py
   statemultiasr.py
+  contact_fwddyn_rigid.py
   )
 
 FOREACH(python ${${PROJECT_NAME}_PYTHON_FILES})
