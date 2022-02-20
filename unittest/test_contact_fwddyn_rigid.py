@@ -30,23 +30,8 @@ mu, R = 0.7, np.eye(3)
 for i in SUPPORT_FEET:
     cone = crocoddyl.FrictionCone(R, mu, 4, False)
     frictionCone = crocoddyl.CostModelResidual(
-        STATE, crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(cone.lb, cone.ub)),
-        crocoddyl.ResidualModelContactFrictionCone(STATE, i, cone, nu))
+        STATE,  crocoddyl.ResidualModelContactForce(STATE, i, pinocchio.Force.Zero(),3, nu))
     COSTS.addCost(ROBOT_MODEL.frames[i].name + "_frictionCone", frictionCone, 1e1)
-
-# q0 = ROBOT_MODEL.referenceConfigurations["standing"]
-# defaultState=np.concatenate([q0, np.zeros(ROBOT_MODEL.nv), np.zeros(24)])
-# stateWeights = np.array([0.01] * 3 + [500.] * 3 + [0.01] * (ROBOT_MODEL.nv - 6) + [10.] * 6 + [1.] *
-#                         (ROBOT_MODEL.nv - 6) + [0.01]*2*STATE.nv_m)
-# stateResidual = crocoddyl.ResidualModelState(STATE, defaultState, nu)
-# stateActivation = crocoddyl.ActivationModelWeightedQuad(stateWeights**2)
-# ctrlWeights = np.array( [1e0] * nu )
-# ctrlResidual = crocoddyl.ResidualModelControl(STATE, nu)
-# ctrlActivation = crocoddyl.ActivationModelWeightedQuad(ctrlWeights**2)
-# stateReg = crocoddyl.CostModelResidual(STATE, stateActivation, stateResidual)
-# ctrlReg = crocoddyl.CostModelResidual(STATE, ctrlActivation, ctrlResidual)
-# COSTS.addCost("stateReg", stateReg, 1e1)
-# COSTS.addCost("ctrlReg", ctrlReg, 1e-1)
 
 MODEL = aslr_to.DifferentialContactFwdDynModelRigid(STATE, ACTUATION, CONTACTS, COSTS)
 
