@@ -7,6 +7,7 @@ import crocoddyl
 import example_robot_data
 import pinocchio
 import aslr_to
+
 from quadruped_problem import SimpleQuadrupedalGaitProblem
 
 WITHDISPLAY = "display" in sys.argv or "CROCODDYL_DISPLAY" in os.environ
@@ -25,9 +26,9 @@ lfFoot, rfFoot, lhFoot, rhFoot = "LF_FOOT", "RF_FOOT", "LH_FOOT", "RH_FOOT"
 gait = SimpleQuadrupedalGaitProblem(anymal.model, lfFoot, rfFoot, lhFoot, rhFoot)
 
 timeStep = 1e-2
-numKnots = 50
-comGoTo = 0.35
-solver = crocoddyl.SolverFDDP(gait.createCoMProblem(x0, comGoTo, timeStep, numKnots))
+numKnots = 200
+comGoTo = 0.15
+solver = crocoddyl.SolverFDDP(gait.createCoMGoalProblem(x0, comGoTo, timeStep, numKnots))
 solver.problem.nthreads = 1
 cameraTF = [2.0, 2.68, 0.84, 0.2, 0.62, 0.72, 0.22]
 if WITHDISPLAY and WITHPLOT:
@@ -47,12 +48,17 @@ else:
 solver.th_stop = 1e-5
 
 xs = [x0] * (solver.problem.T + 1)
-# us = solver.problem.quasiStatic([x0] * solver.problem.T)
-us = [np.zeros(12)] * solver.problem.T
-
-solver.solve(xs, us, 100, False, 1e-8)
-# if WITHDISPLAY:
-#     display = inv_dyn.GepettoDisplayCustom(anymal, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])
-#     while True:
-#         display.displayFromSolver(solver)
-#         time.sleep(2.0)
+us = solver.problem.quasiStatic([x0] * solver.problem.T)
+rd = solver.problem.runningDatas.tolist()
+td = solver.problem.terminalData.differential.tmp_xstatic
+for i in range(len(rd)):
+    xs[i] = rd[i].differential.tmp_xstatic
+xs[-1] = rd[-1].differential.tmp_xstatic
+# xs[-1] = solver.problem.terminalData.differential.tmp_xstatic
+# us = [np.zeros(12)] * solver.problem.T
+solver.solve(xs, us, 300)
+if WITHDISPLAY:
+    display = crocoddyl.GepettoDisplay(anymal, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])
+    while True:
+        display.displayFromSolver(solver)
+        time.sleep(2.0)

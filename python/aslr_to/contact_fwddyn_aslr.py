@@ -29,7 +29,6 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
             raise Exception("Invalid argument: u has wrong dimension (it should be " + str(self.state.nx))
         if len(u) != self.nu:
             raise Exception("Invalid argument: u has wrong dimension (it should be " + str(self.nu)+"it is "+ str(len(u)))
-
         nc = self.contacts.nc
         nq_l = self.state.nq_l
         nv_l = self.state.nv_l
@@ -46,15 +45,16 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         tau_couple = np.zeros(nv_l)
         tau_couple[-self.state.nv_m:] = np.dot(self.K[-self.nu:,-self.nu:], q_l[-self.state.nv_m:]-q_m)
 
-        pinocchio.updateFramePlacements(self.state.pinocchio, data.multibody.pinocchio)
+        # pinocchio.updateFramePlacements(self.state.pinocchio, data.multibody.pinocchio)
         pinocchio.computeAllTerms(self.state.pinocchio, data.multibody.pinocchio, q_l, v_l)
         pinocchio.computeCentroidalMomentum(self.state.pinocchio, data.multibody.pinocchio, q_l, v_l)
+
         self.actuation.calc(data.multibody.actuation, x, u)
         self.contacts.calc(data.multibody.contacts, x_l)
         data.Binv = np.linalg.inv(self.B)
         tau = data.multibody.actuation.tau
 
-        JMinvJt_damping_=0
+        JMinvJt_damping_=0.
         pinocchio.forwardDynamics(self.state.pinocchio, data.multibody.pinocchio, -tau_couple, data.multibody.contacts.Jc[:nc,:nv_l],
                         data.multibody.contacts.a0, JMinvJt_damping_)
         data.xout[:nv_l] = data.multibody.pinocchio.ddq
@@ -78,7 +78,7 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
 
         pinocchio.computeRNEADerivatives(self.state.pinocchio, data.multibody.pinocchio, q_l, v_l, data.xout[:nv_l],
                                          data.multibody.contacts.fext)
-        data.Kinv = pinocchio.getKKTContactDynamicMatrixInverse(self.state.pinocchio, data.multibody.pinocchio, data.multibody.contacts.Jc[:nc,:2*nv_l])
+        data.Kinv = pinocchio.getKKTContactDynamicMatrixInverse(self.state.pinocchio, data.multibody.pinocchio, data.multibody.contacts.Jc[:nc,:nv_l])
         self.actuation.calcDiff(data.multibody.actuation, x, u)
 
         self.contacts.calcDiff(data.multibody.contacts, x_l)
@@ -111,31 +111,32 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         self.contacts.updateForceDiff(data.multibody.contacts, data.df_dx, data.df_du)
 
         self.costs.calcDiff(data.costs, x, u)
+        # print("hey")
 
-    def quasistatic(self, data, x):
+    def quasiStatic(self, data,x,maxiter,tol):
         #The quasistatic controls will be same as the rigid case as both velocity and acceleration is zero.
         if len(x) != self.state.nx:
             raise Exception("Invalid argument: u has wrong dimension (it should be " + self.state.nx)
-        
-        nq, nv, na, nc = self.state.nq, self.state.nv, self.actuation.nu, self.contacts.nc
+        nq, nv, na, nc,nv_m = self.state.nq_l, self.state.nv_l, self.actuation.nu, self.contacts.nc, self.state.nv_m
         data.tmp_xstatic[:nq] = x[:nq]
         data.tmp_xstatic[nq:] *= 0.
         data.tmp_ustatic[:] *= 0.
 
         pinocchio.computeAllTerms(self.state.pinocchio, data.multibody.pinocchio, data.tmp_xstatic[:nq],
-                                  data.tmp_xstatic[nq:])
+                                   data.tmp_xstatic[nq:nq+nv])
         pinocchio.computeJointJacobians(self.state.pinocchio, data.multibody.pinocchio, data.tmp_xstatic[:nq])
-        pinocchio.rnea(self.state.pinocchio, data.multibody.pinocchio, data.tmp_xstatic[:nq], data.tmp_xstatic[nq:],
-                       data.tmp_xstatic[nq:])
+        pinocchio.rnea(self.state.pinocchio, data.multibody.pinocchio, data.tmp_xstatic[:nq], data.tmp_xstatic[nq:nq+nv],
+                       data.tmp_xstatic[nq:nq+nv])
         self.actuation.calc(data.multibody.actuation, data.tmp_xstatic, data.tmp_ustatic[:])
         self.actuation.calcDiff(data.multibody.actuation, data.tmp_xstatic, data.tmp_ustatic[:])
         if nc != 0:
             self.contacts.calc(data.multibody.contacts, data.tmp_xstatic)
-            data.tmp_Jstatic[:, :na] = data.multibody.actuation.dtau_du.reshape(nv, na)
+            print(data.tmp_Jstatic[:, :na].shape)
+            data.tmp_Jstatic[:, :na] = data.multibody.actuation.dtau_du
             data.tmp_Jstatic[:, na:na + nc] = data.multibody.contacts.Jc[:nc, :].T
-            data.tmp_ustatic[:] = np.dot(np.linalg.pinv(data.tmp_Jstatic[:, :na + nc]),
-                                                  data.multibody.pinocchio.tau)[:na]
+            data.tmp_ustatic[:] = np.dot(np.linalg.pinv(data.tmp_Jstatic[:, :nv]).T,data.multibody.pinocchio.tau)[:na]
             data.multibody.pinocchio.tau[:] *= 0
+            data.tmp_xstatic[nq+nv:-nv_m] = np.dot(np.linalg.inv(self.K[-nv_m:,-nv_m:]),data.tmp_ustatic) - data.tmp_xstatic[-nv_m:]
             return data.tmp_ustatic
         else:
             data.tmp_ustatic[nv:nv + na] = np.dot(np.linalg.pinv(data.multibody.actuation.dtau_du.reshape(nv, na)),
