@@ -48,10 +48,10 @@ K = 3*np.eye(int(state.nv/2))
 B = .001*np.eye(int(state.nv/2))
 
 dt = 1e-2
-runningModel = aslr_to.IntegratedActionModelEulerASR(
+runningModel = crocoddyl.IntegratedActionModelEuler(
     aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, runningCostModel,K,B), dt)
 #runningModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
-terminalModel = aslr_to.IntegratedActionModelEulerASR(
+terminalModel = crocoddyl.IntegratedActionModelEuler(
     aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, terminalCostModel,K,B), 0)
 #terminalModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
 
@@ -72,10 +72,10 @@ if WITHDISPLAY:
 solver.setCallbacks([crocoddyl.CallbackLogger(), crocoddyl.CallbackVerbose() ])
 
 xs = [x0] * (solver.problem.T + 1)
-us = solver.problem.quasiStatic([x0] * solver.problem.T)
+# us = solver.problem.quasiStatic([x0] * solver.problem.T)
 solver.th_stop = 1e-7
 # Solving it with the DDP algorithm
-solver.solve(xs, us, 100)
+solver.solve([], [], 100)
 print('Initial position = ', solver.problem.runningDatas.tolist()[0].differential.multibody.pinocchio.oMf[robot_model.getFrameId(
     "EE")].translation.T)
 
@@ -85,11 +85,11 @@ print('Finally reached = ', solver.problem.terminalData.differential.multibody.p
 
 
 log = solver.getCallbacks()[0]
-# u1 , u2 = aslr_to.u_squared(log)
-# print("printing usquared")
-# print(u1)
-# print("______")
-# print(u2)
+u1 , u2 = aslr_to.u_squared(log)
+print("printing usquared")
+print(u1)
+print("______")
+print(u2)
 # Plotting the solution and the DDP convergence
 if WITHPLOT:
     log = solver.getCallbacks()[0]
@@ -118,5 +118,5 @@ for i in range(len(log.xs)):
 
 t=np.arange(0,T*dt,dt)
 
-# savemat("optimised_trajectory.mat", {"q1": x1,"q2":x2,"t":t})
-# savemat("controls.mat", {"u1": u1,"u2":u2,"t":t})
+savemat("optimised_trajectory.mat", {"q1": x1,"q2":x2,"t":t})
+savemat("controls.mat", {"u1": u1,"u2":u2,"t":t})

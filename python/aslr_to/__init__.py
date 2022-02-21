@@ -7,6 +7,8 @@ from .integrated_action import (IntegratedActionModelEulerASR, IntegratedActionD
 from .stiffness_cost import (CostModelStiffness, CostDataStiffness)
 from .vsa_asr_actuation import VSAASRActuation
 from .actuation_aslr import ASRActuation
+from .actuation_condensed import ASRActuationCondensed
+from .soft_residual_model import (SoftDynamicsResidualModel,SoftDynamicsResidualData)
 from .solver import DDPASLR
 import numpy as np
 import crocoddyl
@@ -39,7 +41,7 @@ def plotOCSolution(xs=None, us=None, figIndex=1, show=True, figTitle=""):
     # Getting the state and control trajectories
     if xs is not None:
         xsPlotIdx = 111
-        nx = int(xs[0].shape[0]/4)
+        nx = int(xs[0].shape[0]/2)
         X = [0.] * nx
         for i in range(nx):
             X[i] = [np.asscalar(x[i]) for x in xs]
