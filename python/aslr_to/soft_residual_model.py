@@ -27,9 +27,6 @@ class SoftDynamicsResidualModel(crocoddyl.ResidualModelAbstract):
 class SoftDynamicsResidualData(crocoddyl.ResidualDataAbstract):
     def __init__(self, model, collector):
         crocoddyl.ResidualDataAbstract.__init__(self, model, collector)
-        if not isinstance(collector, crocoddyl.DataCollectorMultibodyInContact):
-            raise Exception(
-                "Invalid argument: the shared data should be derived from DataCollectorMultibodyInContact")
-        nv, na = model.state.nv, model.na
+        nv = model.state.nv
         self.Ru[:, :nv] = np.eye(nv)
         self.Ru[:, nv:2*nv] = -np.eye(nv)
