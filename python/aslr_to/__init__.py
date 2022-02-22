@@ -9,6 +9,7 @@ from .vsa_asr_actuation import VSAASRActuation
 from .actuation_aslr import ASRActuation
 from .actuation_condensed import ASRActuationCondensed
 from .soft_residual_model import (SoftDynamicsResidualModel,SoftDynamicsResidualData)
+from .vsa_dynamics_residual import (VSADynamicsResidualModel, VSADynamicsResidualData)
 from .solver import DDPASLR
 import numpy as np
 import crocoddyl
@@ -16,6 +17,19 @@ import pinocchio
 import time
 import warnings
 import matplotlib.pyplot as plt
+
+def plot_theta(log, K):
+    for i in [-1]:
+        for k in range(len(log.residual[i][0])):
+            theta = []
+            for j in range(len(log.residual[i])):
+                theta.append(log.residual[i][j][k])
+            plt.xlabel('Nodes')
+            plt.ylabel( "theta ")
+            plt.title('')
+            plt.plot(theta,label="theta_"+str(k))
+            plt.legend()
+        plt.show()
 
 def u_squared(log):
     u1_sqaured = 0

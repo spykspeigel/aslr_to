@@ -14,39 +14,39 @@ two_dof = example_robot_data.load('asr_twodof')
 robot_model = two_dof.model
 
 state = crocoddyl.StateMultibody(robot_model)
-actuation = aslr_to.ASRActuationCondensed(state,4)
+actuation = aslr_to.ASRActuationCondensed(state, 6)
 nu = actuation.nu
-print(nu)
+
 costs = crocoddyl.CostModelSum(state, nu)
-K = 3*np.eye(state.nv)
-feas_residual = aslr_to.SoftDynamicsResidualModel(state, nu, K )
-lb = -3.14*K[0,0]*np.ones(state.nv)
-ub = 3.14*K[0,0]*np.ones(state.nv)
-activation = crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(lb,ub))
-feasCost = crocoddyl.CostModelResidual(state,activation ,feas_residual)
-costs.addCost("gripperPose",feasCost,nu)
-xResidual = crocoddyl.ResidualModelControl(state, nu)
-xRegCost = crocoddyl.CostModelResidual(state, xResidual)
-costs.addCost("xReg", xRegCost, 1e-2)
+
+feas_residual = aslr_to.VSADynamicsResidualModel(state, nu)
+
+feasCost = crocoddyl.CostModelResidual(state,feas_residual)
+costs.addCost("feascost",feasCost,nu)
+# xResidual = crocoddyl.ResidualModelControl(state, nu)
+# xRegCost = crocoddyl.CostModelResidual(state, xResidual)
+# costs.addCost("xReg", xRegCost, 1e-2)
 
 model = crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, costs)
 x =   model.state.rand()
 u = np.random.rand(model.nu)
-data =  model.createData()
+DATA =  model.createData()
 MODEL_ND = crocoddyl.DifferentialActionModelNumDiff(model)
 MODEL_ND.disturbance *= 10
 DATA_ND = MODEL_ND.createData()
-model.calc(data, x, u)
-model.calcDiff(data, x, u)
+model.calc(DATA, x, u)
+model.calcDiff(DATA, x, u)
 MODEL_ND.calc(DATA_ND, x, u)
 MODEL_ND.calcDiff(DATA_ND, x, u)
-assertNumDiff(data.Fu, DATA_ND.Fu, NUMDIFF_MODIFIER *
+assertNumDiff(DATA.Fu, DATA_ND.Fu, NUMDIFF_MODIFIER *
                 MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 
-assertNumDiff(data.Fx, DATA_ND.Fx, NUMDIFF_MODIFIER *
+assertNumDiff(DATA.Fx, DATA_ND.Fx, NUMDIFF_MODIFIER *
                 MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 
-assertNumDiff(data.Lx, DATA_ND.Lx, NUMDIFF_MODIFIER *
+print(DATA.Lu)
+print(DATA_ND.Lu)
+assertNumDiff(DATA.Lx, DATA_ND.Lx, NUMDIFF_MODIFIER *
                 1e-6)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
-assertNumDiff(data.Lu, DATA_ND.Lu, NUMDIFF_MODIFIER *
+assertNumDiff(DATA.Lu, DATA_ND.Lu, NUMDIFF_MODIFIER *
                 1e-6)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)

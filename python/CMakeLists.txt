@@ -12,6 +12,7 @@ SET(${PROJECT_NAME}_PYTHON_FILES
   vsa_asr_actuation.py
   soft_residual_model.py
   actuation_condensed.py
+  vsa_dynamics_residual.py
   )
 
 FOREACH(python ${${PROJECT_NAME}_PYTHON_FILES})

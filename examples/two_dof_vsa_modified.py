@@ -26,13 +26,10 @@ framePlacementResidual = aslr_to.ResidualModelFramePlacementASR(state, robot_mod
 
 goalTrackingCost = crocoddyl.CostModelResidual(state, framePlacementResidual)
 
-# xResidual = crocoddyl.ResidualModelControl(state, nu)
-# xRegCost = crocoddyl.CostModelResidual(state, xResidual)
-# uActivation= crocoddyl.ActivationModelSmooth1Norm(4)
 xActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e0] *2 + [1e0] *2 + [1e0] * robot_model.nv + [1e0]* robot_model.nv))
 xResidual = crocoddyl.ResidualModelState(state, state.zero(), nu)
 xRegCost = crocoddyl.CostModelResidual(state, xActivation, xResidual)
-uActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e0]+[1e0] + [1e-4] * 2 ))
+uActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e0]+[1e0] + [0] * 2 ))
 uResidual = crocoddyl.ResidualModelControl(state, nu)
 uRegCost = crocoddyl.CostModelResidual(state, uActivation,uResidual)
 
@@ -42,7 +39,6 @@ vsaCost = aslr_to.CostModelStiffness(state, nu, lamda,Kref)
 
 runningCostModel = crocoddyl.CostModelSum(state,nu)
 terminalCostModel = crocoddyl.CostModelSum(state,nu)
-
 
 # Then let's added the running and terminal cost functions
 runningCostModel.addCost("gripperPose", goalTrackingCost, 1e0)
