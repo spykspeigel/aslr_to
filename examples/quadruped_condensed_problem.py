@@ -8,7 +8,7 @@ class SimpleQuadrupedalGaitProblem:
         self.rmodel = rmodel
         self.rdata = rmodel.createData()
         self.state = crocoddyl.StateMultibody(self.rmodel)
-        self.actuation = aslr_to.FreeFloatingActuationCondensed(self.state)
+        self.actuation = aslr_to.FreeFloatingActuationCondensed(self.state,24)
         # Getting the frame id for all the legs
         self.lfFootId = self.rmodel.getFrameId(lfFoot)
         self.rfFootId = self.rmodel.getFrameId(rfFoot)

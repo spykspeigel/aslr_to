@@ -8,6 +8,7 @@ SET(${PROJECT_NAME}_PYTHON_FILES
   contact_fwddyn_rigid.py
   floating_actuation_condensed.py
   floating_soft_model_residual.py
+  floating_vsa_model_residual.py
   )
 
 FOREACH(python ${${PROJECT_NAME}_PYTHON_FILES})

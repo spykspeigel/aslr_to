@@ -5,6 +5,7 @@ from .floating_actuation import ASRFreeFloatingActuation
 from .contact_fwddyn_rigid import (DifferentialContactFwdDynModelRigid,DifferentialContactFwdDynDataRigid)
 from .floating_actuation_condensed import FreeFloatingActuationCondensed
 from .floating_soft_model_residual import (FloatingSoftDynamicsResidualModel, FloatingSoftDynamicsResidualData)
+from .floating_vsa_model_residual import (FloatingVSADynamicsResidualModel,FloatingVSADynamicsResidualData)
 from .solver import DDPASLR
 import numpy as np
 import crocoddyl

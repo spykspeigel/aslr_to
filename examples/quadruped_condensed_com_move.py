@@ -8,7 +8,7 @@ import example_robot_data
 import pinocchio
 import aslr_to
 import inv_dyn
-from quadruped_condensed import SimpleQuadrupedalGaitProblem
+from quadruped_condensed_problem import SimpleQuadrupedalGaitProblem
 
 WITHDISPLAY = "display" in sys.argv or "CROCODDYL_DISPLAY" in os.environ
 WITHPLOT = "plot" in sys.argv or "CROCODDYL_PLOT" in os.environ
