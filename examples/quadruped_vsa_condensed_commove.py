@@ -8,7 +8,7 @@ import example_robot_data
 import pinocchio
 import aslr_to
 import inv_dyn
-from quadruped_vsa_condensed_problem import SimpleQuadrupedalGaitProblem
+from quadruped_vsa_condensed_problem import SimpleQuadrupedalGaitProblem, plotSolution
 
 WITHDISPLAY = "display" in sys.argv or "CROCODDYL_DISPLAY" in os.environ
 WITHPLOT = "plot" in sys.argv or "CROCODDYL_PLOT" in os.environ
@@ -28,7 +28,7 @@ gait = SimpleQuadrupedalGaitProblem(anymal.model, lfFoot, rfFoot, lhFoot, rhFoot
 timeStep = 1e-2
 numKnots = 3
 comGoTo = 0.35
-solver = crocoddyl.SolverFDDP(gait.createCoMProblem(x0, comGoTo, timeStep, numKnots))
+solver = crocoddyl.SolverBoxDDP(gait.createCoMProblem(x0, comGoTo, timeStep, numKnots))
 solver.problem.nthreads = 1
 cameraTF = [2.0, 2.68, 0.84, 0.2, 0.62, 0.72, 0.22]
 if WITHDISPLAY and WITHPLOT:
@@ -45,14 +45,15 @@ elif WITHDISPLAY:
 elif WITHPLOT:
     solver.setCallbacks([crocoddyl.CallbackLogger(), crocoddyl.CallbackVerbose()])
 else:
-    solver.setCallbacks([crocoddyl.CallbackVerbose(), inv_dyn.CallbackResidualLogger('feascost')])
+    solver.setCallbacks([crocoddyl.CallbackVerbose()])#, inv_dyn.CallbackResidualLogger('feascost')])
 solver.th_stop = 1e-5
 
 xs = [x0] * (solver.problem.T + 1)
 # us = solver.problem.quasiStatic([x0] * solver.problem.T)
-us = [np.concatenate([np.zeros(24),np.ones(12)])] * solver.problem.T
+us = [np.concatenate([np.ones(24),np.ones(12)])] * solver.problem.T
+print(us)
 solver.solve(xs, us, 100)
-log = solver.getCallbacks()[-1]
+# log = solver.getCallbacks()[-1]
 # aslr_to.plot_theta(log)
 # rd=solver.problem.runningDatas.tolist()
 # print(rd[0].differential.multibody.pinocchio.oMf[anymal.model.getFrameId(
@@ -64,3 +65,6 @@ if WITHDISPLAY:
     while True:
         display.displayFromSolver(solver)
         time.sleep(2.0)
+if WITHPLOT:
+    log = solver.getCallbacks()[0]
+    crocoddyl.plotOCSolution(log.xs ,log.us,figIndex=1, show=True)

@@ -452,7 +452,6 @@ class SimpleQuadrupedalGaitProblem:
         activation = crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(lb,ub))
         feasCost = crocoddyl.CostModelResidual(self.state, activation ,feas_residual)
         costModel.addCost("feascost",feasCost,1e8)
-        print("hey")
         lb = np.concatenate([self.state.lb[1:self.state.nv + 1], self.state.lb[-self.state.nv:]])
         ub = np.concatenate([self.state.ub[1:self.state.nv + 1], self.state.ub[-self.state.nv:]])
         stateBoundsResidual = crocoddyl.ResidualModelState(self.state, nu)
