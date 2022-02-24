@@ -46,13 +46,13 @@ costs.addCost("feascost",feasCost,nu)
 
 # Then let's added the running and terminal cost functions
 runningCostModel.addCost("gripperPose", goalTrackingCost, 1e0)
-runningCostModel.addCost("xReg", xRegCost, 1e-2)
+runningCostModel.addCost("xReg", xRegCost, 1e-1)
 runningCostModel.addCost("uReg", uRegCost, 1e-1)
 runningCostModel.addCost("feascost", feasCost, 1e4)
 
-terminalCostModel.addCost("gripperPose", goalTrackingCost, 1e3)
+terminalCostModel.addCost("gripperPose", goalTrackingCost, 1e4)
 
-dt = 1e-2
+dt = 1e-3
 runningModel = crocoddyl.IntegratedActionModelEuler(
     crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, runningCostModel), dt)
 terminalModel = crocoddyl.IntegratedActionModelEuler(
@@ -87,16 +87,17 @@ print('Finally reached = ', solver.problem.terminalData.differential.multibody.p
 
 log = solver.getCallbacks()[2]
 log1 = solver.getCallbacks()[0]
-print( aslr_to.u_squared(log1))
+print(aslr_to.u_squared(log1))
 # print("printing usquared")
 # print(u1)
 # print("______")
 # print(u2)
-inv_dyn.plot_residual(log,1)
+# inv_dyn.plot_residual(log,1)
+aslr_to.plot_theta(log,1)
 # Plotting the solution and the DDP convergence
 if WITHPLOT:
     log = solver.getCallbacks()[0]
-    crocoddyl.plotOCSolution(log.xs, log.us,figIndex=1, show=True)
+    aslr_to.plotOCSolution(log.xs, log.us,figIndex=1, show=True)
     # crocoddyl.plotConvergence(log.costs, log.u_regs, log.x_regs, log.grads, log.stops, log.steps, figIndex=2)
 
 # Visualizing the solution in gepetto-viewer
