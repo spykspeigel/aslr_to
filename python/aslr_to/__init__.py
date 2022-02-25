@@ -32,19 +32,11 @@ def plot_theta(log, K):
         plt.show()
 
 def u_squared(log):
-    u1_sqaured = 0
-    u2_sqaured = 0
-    u3_sqaured = 0
-    u4_sqaured = 0
+    u_sqaured = np.zeros(len(log.us[0]))
     for i in range(len(log.us)):
-        u1_sqaured += log.us[i][0]**2
-        u2_sqaured += log.us[i][1]**2
-        try:
-            u3_sqaured += log.us[i][2]**2
-            u4_sqaured += log.us[i][3]**2
-        except:
-            return [u1_sqaured, u2_sqaured]        
-    return [u1_sqaured, u2_sqaured, u3_sqaured, u4_sqaured]
+        for j in range(len(log.us[0])):
+            u_sqaured[j] += abs(log.us[i][j])
+    return u_sqaured
 
 def plotOCSolution(xs=None, us=None, figIndex=1, show=True, figTitle=""):
     import matplotlib.pyplot as plt
