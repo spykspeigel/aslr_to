@@ -332,7 +332,7 @@ class SimpleQuadrupedalGaitProblem:
                     [self.lhFootId, pinocchio.SE3(np.eye(3), lhFootPos0 + f0)],
                     [self.rhFootId, pinocchio.SE3(np.eye(3), rhFootPos0 + f0)]]
         landingPhase = [
-            self.createFootSwitchModel([self.lfFootId, self.rfFootId, self.lhFootId, self.rhFootId], footTask, False)
+            self.createFootSwitchModel([self.lfFootId, self.rfFootId, self.lhFootId, self.rhFootId], footTask)
         ]
         f0[2] = df
         landed = [
@@ -390,7 +390,7 @@ class SimpleQuadrupedalGaitProblem:
             ]
 
         # Action model for the foot switch
-        footSwitchModel = self.createFootSwitchModel(supportFootIds, swingFootTask)
+        footSwitchModel = self.createFootSwitchModel(supportFootIds, swingFootTask, True)
 
         # Updating the current foot position for next step
         comPos0 += [stepLength * comPercentage, 0., 0.]
@@ -451,7 +451,7 @@ class SimpleQuadrupedalGaitProblem:
 
         activation = crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(lb,ub))
         feasCost = crocoddyl.CostModelResidual(self.state, activation ,feas_residual)
-        costModel.addCost("feascost",feasCost,1e8)
+        costModel.addCost("feascost",feasCost,1e4)
         lb = np.concatenate([self.state.lb[1:self.state.nv + 1], self.state.lb[-self.state.nv:]])
         ub = np.concatenate([self.state.ub[1:self.state.nv + 1], self.state.ub[-self.state.nv:]])
         stateBoundsResidual = crocoddyl.ResidualModelState(self.state, nu)
@@ -522,7 +522,21 @@ class SimpleQuadrupedalGaitProblem:
         stateReg = crocoddyl.CostModelResidual(self.state, stateActivation, stateResidual)
         ctrlReg = crocoddyl.CostModelResidual(self.state, ctrlResidual)
         costModel.addCost("stateReg", stateReg, 1e1)
-        costModel.addCost("ctrlReg", ctrlReg, 1e-3)
+        # costModel.addCost("ctrlReg", ctrlReg, 1e-3)
+
+        feas_residual = aslr_to.FloatingSoftDynamicsResidualModel(self.state, nu, self.K )
+        lb = -3.14*self.K[0,0]*np.ones(self.state.nv-6)
+        ub = 3.14*self.K[0,0]*np.ones(self.state.nv-6)
+
+        activation = crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(lb,ub))
+        feasCost = crocoddyl.CostModelResidual(self.state, activation ,feas_residual)
+        costModel.addCost("feascost",feasCost,1e4)
+        lb = np.concatenate([self.state.lb[1:self.state.nv + 1], self.state.lb[-self.state.nv:]])
+        ub = np.concatenate([self.state.ub[1:self.state.nv + 1], self.state.ub[-self.state.nv:]])
+        stateBoundsResidual = crocoddyl.ResidualModelState(self.state, nu)
+        stateBoundsActivation = crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(lb, ub))
+        stateBounds = crocoddyl.CostModelResidual(self.state, stateBoundsActivation, stateBoundsResidual)
+        costModel.addCost("stateBounds", stateBounds, 1e2)
 
         # Creating the action model for the KKT dynamics with simpletic Euler
         # integration scheme
