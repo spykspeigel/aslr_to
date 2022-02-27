@@ -111,7 +111,6 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         self.contacts.updateForceDiff(data.multibody.contacts, data.df_dx, data.df_du)
 
         self.costs.calcDiff(data.costs, x, u)
-        # print("hey")
 
     def quasiStatic(self, data,x,maxiter,tol):
         #The quasistatic controls will be same as the rigid case as both velocity and acceleration is zero.

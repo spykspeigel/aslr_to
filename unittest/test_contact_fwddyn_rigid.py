@@ -10,7 +10,7 @@ from test_utils_ex import NUMDIFF_MODIFIER, assertNumDiff
 
 ROBOT_MODEL = example_robot_data.load("anymal").model
 STATE = crocoddyl.StateMultibody(ROBOT_MODEL)
-ACTUATION = crocoddyl.ActuationModelFloatingBase(STATE)
+ACTUATION =  aslr_to.FreeFloatingActuationCondensed(STATE,24)
 SUPPORT_FEET = [
     ROBOT_MODEL.getFrameId('LF_FOOT'),
     ROBOT_MODEL.getFrameId('RF_FOOT'),
@@ -28,9 +28,8 @@ COSTS = crocoddyl.CostModelSum(STATE, nu)
 mu, R = 0.7, np.eye(3)
 
 for i in SUPPORT_FEET:
-    cone = crocoddyl.FrictionCone(R, mu, 4, False)
     frictionCone = crocoddyl.CostModelResidual(
-        STATE,  crocoddyl.ResidualModelContactForce(STATE, i, pinocchio.Force.Zero(),3, nu))
+        STATE, crocoddyl.ResidualModelContactForce(STATE, i, pinocchio.Force.Zero(), 3,ACTUATION.nu))
     COSTS.addCost(ROBOT_MODEL.frames[i].name + "_frictionCone", frictionCone, 1e1)
 
 MODEL = aslr_to.DifferentialContactFwdDynModelRigid(STATE, ACTUATION, CONTACTS, COSTS)

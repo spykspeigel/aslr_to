@@ -1,7 +1,7 @@
 import numpy as np
 import pinocchio
 import crocoddyl
-
+import aslr_to
 class DifferentialContactFwdDynModelRigid(crocoddyl.DifferentialActionModelAbstract):
     def __init__(self, state, actuation, contacts, costs, constraints=None):
         crocoddyl.DifferentialActionModelAbstract.__init__(self, state, actuation.nu, costs.nr)
@@ -15,7 +15,7 @@ class DifferentialContactFwdDynModelRigid(crocoddyl.DifferentialActionModelAbstr
         if len(u) != self.nu:
             raise Exception("Invalid argument: u has wrong dimension (it should be " + str(self.nu)+"it is "+ str(len(u)))
 
-        nq, nc = self.state.nq, self.contacts.nc
+        nq, nv, nc = self.state.nq, self.state.nv, self.contacts.nc
         q = x[:nq]
         v = x[nq:]
         
@@ -25,6 +25,13 @@ class DifferentialContactFwdDynModelRigid(crocoddyl.DifferentialActionModelAbstr
         self.actuation.calc(data.multibody.actuation, x, u)
         self.contacts.calc(data.multibody.contacts, x)
         tau = data.multibody.actuation.tau
+
+        nv_m = self.state.nv-6
+        tau_m = u[:nv_m]
+        theta_dot_dot = u[nv_m:2*nv_m]
+
+        data.multibody.motor.theta = np.dot(data.multibody.motor.K, q[-nv_m:]) + tau_m -theta_dot_dot
+        data.multibody.motor.theta_ddot = theta_dot_dot
 
         JMinvJt_damping_=0
         pinocchio.forwardDynamics(self.state.pinocchio, data.multibody.pinocchio, tau, data.multibody.contacts.Jc[:nc,:],
@@ -79,7 +86,8 @@ class DifferentialContactFwdDynDataRigid(crocoddyl.DifferentialActionDataAbstrac
     def __init__(self, model):
         crocoddyl.DifferentialActionDataAbstract.__init__(self, model)
         self.pinocchio = pinocchio.Model.createData(model.state.pinocchio)
-        self.multibody = crocoddyl.DataCollectorActMultibodyInContact(self.pinocchio, model.actuation.createData(), model.contacts.createData(self.pinocchio))
+        motor = aslr_to.SoftModelData(model.state.nv-6)
+        self.multibody = aslr_to.DataCollectorSoftActMultibodyInContact(self.pinocchio, model.actuation.createData(), motor, model.contacts.createData(self.pinocchio))
         nx, ndx, nv, nu, nc = model.state.nx, model.state.ndx, model.state.nv, model.nu, model.contacts.nc
         self.Kinv = np.zeros((nv + nc, nv + nc))
         self.df_dx = np.zeros([nc, ndx])
