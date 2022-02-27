@@ -4,8 +4,8 @@ from .residual_frame_placement import (ResidualModelFramePlacementASR,ResidualDa
 from .floating_actuation import ASRFreeFloatingActuation
 from .contact_fwddyn_rigid import (DifferentialContactFwdDynModelRigid,DifferentialContactFwdDynDataRigid)
 from .floating_actuation_condensed import FreeFloatingActuationCondensed
-from .floating_soft_model_residual import (FloatingSoftDynamicsResidualModel, FloatingSoftDynamicsResidualData)
-from .floating_vsa_model_residual import (FloatingVSADynamicsResidualModel,FloatingVSADynamicsResidualData)
+from .residual_floating_soft_model import (FloatingSoftDynamicsResidualModel, FloatingSoftDynamicsResidualData)
+from .residual_floating_vsa_model import (FloatingVSADynamicsResidualModel,FloatingVSADynamicsResidualData)
 from .softmodel_data import (SoftModelData,DataCollectorSoftModel)
 from .datacollector_softmodel_multibody import (DataCollectorSoftActMultibody,DataCollectorSoftActMultibodyInContact)
 from .solver import DDPASLR
