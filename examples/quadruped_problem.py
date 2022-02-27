@@ -9,7 +9,11 @@ class SimpleQuadrupedalGaitProblem:
         self.rmodel = rmodel
         self.rdata = rmodel.createData()
         self.state = crocoddyl.StateMultibody(self.rmodel)
-        self.actuation = aslr_to.ASRFreeFloatingActuation(self.state)
+        self.K = np.zeros([self.state.pinocchio.nv,self.state.pinocchio.nq])
+        nu = self.state.nv_m
+        self.K[-nu:,-nu:]= 10*np.eye(nu)
+        self.B = .01*np.eye(self.state.nv_m)
+        self.actuation = aslr_to.ASRFreeFloatingActuation(self.state,self.K,self.B)
         # Getting the frame id for all the legs
         self.lfFootId = self.rmodel.getFrameId(lfFoot)
         self.rfFootId = self.rmodel.getFrameId(rfFoot)
@@ -23,10 +27,6 @@ class SimpleQuadrupedalGaitProblem:
         self.mu = 0.7
         self.Rsurf = np.eye(3)
 
-        self.K = np.zeros([self.state.pinocchio.nv,self.state.pinocchio.nq])
-        nu = self.actuation.nu
-        self.K[-nu:,-nu:]= 10*np.eye(nu)
-        self.B = .01*np.eye(self.state.nv_m)
 
     def createCoMProblem(self, x0, comGoTo, timeStep, numKnots):
         """ Create a shooting problem for a CoM forward/backward task.
@@ -149,8 +149,8 @@ class SimpleQuadrupedalGaitProblem:
                 footTrack = crocoddyl.CostModelResidual(self.state, frameTranslationResidual)
                 costModel.addCost(self.rmodel.frames[i[0]].name + "_footTrack", footTrack, 1e6)
 
-        stateWeights = np.array([0.] * 3 + [500.] * 3 + [0.01] * (self.rmodel.nv - 6) + [10.] * 6 + [1.] *
-                                (self.rmodel.nv - 6) + [0.]*2*self.state.nv_m)
+        stateWeights = np.array([1e-1] * 3 + [500.] * 3 + [0.01] * (self.rmodel.nv - 6) + [10.] * 6 + [1.] *
+                                (self.rmodel.nv - 6) + [1e-1]*2*self.state.nv_m)
         stateResidual = crocoddyl.ResidualModelState(self.state, self.rmodel.defaultState, nu)
         stateActivation = crocoddyl.ActivationModelWeightedQuad(stateWeights**2)
         ctrlWeights = np.array( [1e0] * nu )
