@@ -10,7 +10,7 @@ from test_utils_ex import NUMDIFF_MODIFIER, assertNumDiff
 
 ROBOT_MODEL = example_robot_data.load("anymal").model
 STATE = crocoddyl.StateMultibody(ROBOT_MODEL)
-ACTUATION = aslr_to.FreeFloatingActuationCondensed(STATE)
+ACTUATION = aslr_to.FreeFloatingActuationCondensed(STATE,24)
 
 SUPPORT_FEET = [
     ROBOT_MODEL.getFrameId('LF_FOOT'),
@@ -47,8 +47,8 @@ mu, R = 0.7, np.eye(3)
 K = 10*np.eye(12)
 
 feas_residual = aslr_to.FloatingSoftDynamicsResidualModel(STATE, nu, K )
-lb = -3.14*K[0,0]*np.ones(STATE.nv-6)
-ub = 3.14*K[0,0]*np.ones(STATE.nv-6)
+lb = -3.14*np.ones(STATE.nv-6)
+ub = 3.14*np.ones(STATE.nv-6)
 activation = crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(lb,ub))
 feasCost = crocoddyl.CostModelResidual(STATE, activation ,feas_residual)
 COSTS.addCost("feascost",feasCost,nu)

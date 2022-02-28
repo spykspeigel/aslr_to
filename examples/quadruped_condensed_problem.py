@@ -439,15 +439,18 @@ class SimpleQuadrupedalGaitProblem:
                                 (self.rmodel.nv - 6))
         stateResidual = crocoddyl.ResidualModelState(self.state, self.rmodel.defaultState, nu)
         stateActivation = crocoddyl.ActivationModelWeightedQuad(stateWeights**2)
-        ctrlResidual = crocoddyl.ResidualModelControl(self.state, nu)
         stateReg = crocoddyl.CostModelResidual(self.state, stateActivation, stateResidual)
-        ctrlReg = crocoddyl.CostModelResidual(self.state, ctrlResidual)
+        
+        controlWeights = np.array([1] * (self.rmodel.nv - 6) + [1] * (self.rmodel.nv - 6) )
+        controlActivation = crocoddyl.ActivationModelWeightedQuad(controlWeights**2)
+        ctrlResidual = crocoddyl.ResidualModelControl(self.state, nu)
+        ctrlReg = crocoddyl.CostModelResidual(self.state, controlActivation, ctrlResidual)
         costModel.addCost("stateReg", stateReg, 1e1)
         costModel.addCost("ctrlReg", ctrlReg, 1e-1)
 
         feas_residual = aslr_to.FloatingSoftDynamicsResidualModel(self.state, nu, self.K )
-        lb = -3.14*self.K[0,0]*np.ones(self.state.nv-6)
-        ub = 3.14*self.K[0,0]*np.ones(self.state.nv-6)
+        lb = -3.14*np.ones(self.state.nv-6)
+        ub = 3.14*np.ones(self.state.nv-6)
 
         activation = crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(lb,ub))
         feasCost = crocoddyl.CostModelResidual(self.state, activation ,feas_residual)

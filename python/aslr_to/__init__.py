@@ -16,12 +16,12 @@ import time
 import warnings
 import matplotlib.pyplot as plt
 
-def plot_theta(log, K):
+def plot_theta(log):
     for i in [-1]:
         for k in range(12):
             theta = []
             for j in range(len(log.residual[i])):
-                theta.append(log.residual[i][j][k]/K)
+                theta.append(log.residual[i][j][k])
             plt.xlabel('Nodes')
             plt.ylabel( "theta ")
             plt.title('')

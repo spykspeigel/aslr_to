@@ -7,7 +7,6 @@ class FloatingVSADynamicsResidualModel(crocoddyl.ResidualModelAbstract):
     def __init__(self, state, nu):
         crocoddyl.ResidualModelAbstract.__init__(self, state, state.nv-6, nu, True, True, True)
 
-
     def calc(self, data, x, u):
         nv = self.state.nv-6
         nq = self.state.nq

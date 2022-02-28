@@ -14,17 +14,16 @@ class FloatingSoftDynamicsResidualModel(crocoddyl.ResidualModelAbstract):
         q = x[:nq]
         tau = u[:nv]
         theta_dot_dot = u[nv:2*nv]
-        # print(np.dot(self.K,q[-nv:]).shape)
-        # print(tau)
-        data.r = np.dot(self.K,q[-nv:]) + tau -theta_dot_dot
+        data.r[:] = q[-nv:] + np.dot(np.linalg.inv(self.K), (tau - theta_dot_dot))
 
     def calcDiff(self, data, x, u):
         nq = self.state.nq
         nv = self.state.nv -6
-        data.Rx[:, 6:self.state.nv] = self.K[-nv:,-nv:]
-        data.Ru[:, :nv] = np.eye(nv)
-        data.Ru[:, nv:2*nv] = -np.eye(nv)
 
+        Kinv = np.linalg.inv(self.K)
+        data.Rx[:, 6:self.state.nv] = np.eye(nv)
+        data.Ru[:, :nv] = Kinv
+        data.Ru[:, nv:2*nv] = -Kinv
 class FloatingSoftDynamicsResidualData(crocoddyl.ResidualDataAbstract):
     def __init__(self, model, collector):
         crocoddyl.ResidualDataAbstract.__init__(self, model, collector)
