@@ -28,7 +28,7 @@ class DifferentialContactFwdDynModelRigid(crocoddyl.DifferentialActionModelAbstr
 
         theta_dot_dot = u[nv:2*nv]
 
-        data.multibody.motor.theta = np.dot(data.multibody.motor.K, q[-nv:]) + tau -theta_dot_dot
+        data.multibody.motor.theta[:] = np.dot(np.diag(data.multibody.motor.K), q[-nv:]) + tau -theta_dot_dot
         data.multibody.motor.theta_ddot = theta_dot_dot
 
         JMinvJt_damping_=0
