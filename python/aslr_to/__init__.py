@@ -32,6 +32,6 @@ def plot_theta(log):
 def u_squared(log):
     u_sqaured = np.zeros(len(log.us[0]))
     for i in range(len(log.us)):
-        for j in range(len(log.us[0])):
-            u_sqaured[j] += abs(log.us[i][j])
+        for j in range(len(log.us[i])):
+            u_sqaured[j] += log.us[i][j]**2
     return u_sqaured
