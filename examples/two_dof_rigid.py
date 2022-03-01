@@ -15,9 +15,9 @@ WITHPLOT = 'plot' in sys.argv or 'CROCODDYL_PLOT' in os.environ
 #WITHPLOT =True
 two_dof = example_robot_data.load('asr_twodof')
 robot_model = two_dof.model
+robot_model.gravity.linear = np.array([9.81,0,0])
 state = crocoddyl.StateMultibody(robot_model)
 actuation = crocoddyl.ActuationModelFull(state)
-
 nu = actuation.nu
 
 runningCostModel = crocoddyl.CostModelSum(state,nu)
@@ -33,10 +33,10 @@ goalTrackingCost = crocoddyl.CostModelResidual(state, framePlacementResidual)
 xRegCost = crocoddyl.CostModelResidual(state, xResidual)
 
 # Then let's added the running and terminal cost functions
-runningCostModel.addCost("gripperPose", goalTrackingCost, 1e1)
+runningCostModel.addCost("gripperPose", goalTrackingCost, 1e0)
 runningCostModel.addCost("xReg", xRegCost, 1e-1)
-runningCostModel.addCost("uReg", uRegCost, 1e2)
-terminalCostModel.addCost("gripperPose", goalTrackingCost, 5e4)
+runningCostModel.addCost("uReg", uRegCost, 1e-1)
+terminalCostModel.addCost("gripperPose", goalTrackingCost, 4e4)
 
 dt = 1e-2
 runningModel = crocoddyl.IntegratedActionModelEuler(
@@ -44,9 +44,9 @@ runningModel = crocoddyl.IntegratedActionModelEuler(
 terminalModel = crocoddyl.IntegratedActionModelEuler(
     crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, terminalCostModel), 0)
 
-T = 500
+T = 200
 
-q0 = np.array([.1,0])
+q0 = np.array([.0,0])
 x0 = np.concatenate([q0,pinocchio.utils.zero(state.nv)])
 
 problem = crocoddyl.ShootingProblem(x0, [runningModel] * T, terminalModel)
@@ -71,11 +71,11 @@ print('Finally reached = ', solver.problem.terminalData.differential.multibody.p
     "EE")].translation.T)
 
 log = solver.getCallbacks()[0]
-u1 , u2 = aslr_to.u_squared(log)
-print("printing usquared")
-print(u1)
-print("______")
-print(u2)
+u1 , u2 =aslr_to.u_squared(log)
+# print("printing usquared")
+# print(u1)
+# print("______")
+print(u2+u1)
 # Plotting the solution and the DDP convergence
 if WITHPLOT:
     log = solver.getCallbacks()[0]

@@ -8,6 +8,8 @@ SET(${PROJECT_NAME}_PYTHON_FILES
   residual_frame_placement.py
   solver.py
   integrated_action.py
+  stiffness_cost.py
+  vsa_asr_actuation.py
   )
 
 FOREACH(python ${${PROJECT_NAME}_PYTHON_FILES})

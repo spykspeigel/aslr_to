@@ -9,13 +9,15 @@ import numpy as np
 import example_robot_data
 import aslr_to
 import time
+from scipy.io import savemat
+
 WITHDISPLAY = 'display' in sys.argv or 'CROCODDYL_DISPLAY' in os.environ
 WITHPLOT = 'plot' in sys.argv or 'CROCODDYL_PLOT' in os.environ
 
 #WITHPLOT =True
 two_dof = example_robot_data.load('asr_twodof')
 robot_model = two_dof.model
-robot_model.gravity.linear = np.array([0,-9.81,0])
+robot_model.gravity.linear = np.array([9.81,0,0])
 state = aslr_to.StateMultibodyASR(robot_model)
 actuation = aslr_to.ASRActuation(state)
 
@@ -42,10 +44,10 @@ runningCostModel.addCost("uReg", uRegCost, 1e-1)
 terminalCostModel.addCost("gripperPose", goalTrackingCost, 4e4)
 
 
-K = 10*np.eye(int(state.nv/2))
-B = .02*np.eye(int(state.nv/2))
+K = 1*np.eye(int(state.nv/2))
+B = .001*np.eye(int(state.nv/2))
 
-dt = 1e-2
+dt = 1e-3
 runningModel = aslr_to.IntegratedActionModelEulerASR(
     aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, runningCostModel,K,B), dt)
 #runningModel.differential.armature = np.array([0.1, 0.1, 0.1, 0.1, 0.1, 0.1, 0.])
@@ -55,7 +57,7 @@ terminalModel = aslr_to.IntegratedActionModelEulerASR(
 
 T = 200
 
-q0 = np.array([.1,0])
+q0 = np.array([.0,0])
 x0 = np.concatenate([q0,q0,pinocchio.utils.zero(state.nv)])
 
 problem = crocoddyl.ShootingProblem(x0, [runningModel] * T, terminalModel)
@@ -74,24 +76,47 @@ us = solver.problem.quasiStatic([x0] * solver.problem.T)
 solver.th_stop = 1e-7
 # Solving it with the DDP algorithm
 solver.solve(xs, us, 100)
+print('Initial position = ', solver.problem.runningDatas.tolist()[0].differential.multibody.pinocchio.oMf[robot_model.getFrameId(
+    "EE")].translation.T)
+
 
 print('Finally reached = ', solver.problem.terminalData.differential.multibody.pinocchio.oMf[robot_model.getFrameId(
     "EE")].translation.T)
 
+
 log = solver.getCallbacks()[0]
 u1 , u2 = aslr_to.u_squared(log)
-print("printing usquared")
-print(u1)
-print("______")
-print(u2)
+# print("printing usquared")
+print(np.sum(aslr_to.u_squared(log)))
+# print("______")
+# print(u2)
 # Plotting the solution and the DDP convergence
-if WITHPLOT:
-    log = solver.getCallbacks()[0]
-    aslr_to.plotOCSolution(log.xs ,log.us,figIndex=1, show=True)
-    #crocoddyl.plotConvergence(log.costs, log.u_regs, log.x_regs, log.grads, log.stops, log.steps, figIndex=2)
+# if WITHPLOT:
+#     log = solver.getCallbacks()[0]
+#     aslr_to.plotOCSolution(log.xs ,log.us,figIndex=1, show=True)
+#     #crocoddyl.plotConvergence(log.costs, log.u_regs, log.x_regs, log.grads, log.stops, log.steps, figIndex=2)
 
-# Visualizing the solution in gepetto-viewer
-if WITHDISPLAY:
-    while True:
-        display.displayFromSolver(solver)
-        time.sleep(2.0)
+# # Visualizing the solution in gepetto-viewer
+# if WITHDISPLAY:
+#     while True:
+#         display.displayFromSolver(solver)
+#         time.sleep(2.0)
+
+# u1=np.array([])
+# u2=np.array([])
+
+# x1=np.array([])
+# x2=np.array([])
+
+# for i in range(len(log.us)):
+#     u1 = np.append(u1,log.us[i][0])
+#     u2 = np.append(u2,log.us[i][1])
+
+# for i in range(len(log.xs)):
+#     x1 = np.append(x1,log.xs[i][2])
+#     x2 = np.append(x2,log.xs[i][3])
+
+# t=np.arange(0,T*dt,dt)
+
+# savemat("optimised_trajectory.mat", {"q1": x1,"q2":x2,"t":t})
+# savemat("controls.mat", {"u1": u1,"u2":u2,"t":t})
