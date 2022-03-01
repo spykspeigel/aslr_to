@@ -15,7 +15,7 @@ WITHPLOT = 'plot' in sys.argv or 'CROCODDYL_PLOT' in os.environ
 #WITHPLOT =True
 two_dof = example_robot_data.load('asr_twodof')
 robot_model = two_dof.model
-robot_model.gravity.linear = np.array([0,-9.81,0])
+robot_model.gravity.linear = np.array([9.81,0,0])
 state = crocoddyl.StateMultibody(robot_model)
 actuation = crocoddyl.ActuationModelFull(state)
 nu = actuation.nu
@@ -71,7 +71,7 @@ print('Finally reached = ', solver.problem.terminalData.differential.multibody.p
     "EE")].translation.T)
 
 log = solver.getCallbacks()[0]
-print( aslr_to.u_squared(log))
+print( np.sum(aslr_to.u_squared(log)))
 # print("printing usquared")
 # print(u1)
 # print("______")

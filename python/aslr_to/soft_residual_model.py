@@ -21,7 +21,6 @@ class SoftDynamicsResidualModel(crocoddyl.ResidualModelAbstract):
         nq = self.state.nq
         nv = self.state.nv
         data.Rx[:, :nv] = self.K[-nv:,-nv:]
-        print(data.Ru.shape)
         data.Ru[:, :nv] = np.eye(nv)
         data.Ru[:, nv:2*nv] = -np.eye(nv)
 class SoftDynamicsResidualData(crocoddyl.ResidualDataAbstract):

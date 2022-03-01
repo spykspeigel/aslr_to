@@ -29,7 +29,7 @@ goalTrackingCost = crocoddyl.CostModelResidual(state, framePlacementResidual)
 xActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e0] *2 + [1e0] *2 + [1e0] * robot_model.nv + [1e0]* robot_model.nv))
 xResidual = crocoddyl.ResidualModelState(state, state.zero(), nu)
 xRegCost = crocoddyl.CostModelResidual(state, xActivation, xResidual)
-uActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e0]+[1e0] + [0] * 2 ))
+uActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e0]+[1e0] + [1e0] * 2 ))
 uResidual = crocoddyl.ResidualModelControl(state, nu)
 uRegCost = crocoddyl.CostModelResidual(state, uActivation,uResidual)
 
@@ -43,9 +43,9 @@ terminalCostModel = crocoddyl.CostModelSum(state,nu)
 # Then let's added the running and terminal cost functions
 runningCostModel.addCost("gripperPose", goalTrackingCost, 1e0)
 runningCostModel.addCost("xReg", xRegCost, 1e-1)
-runningCostModel.addCost("uReg", uRegCost, 1e0)
-runningCostModel.addCost("vsa", vsaCost, 1e-1)
-terminalCostModel.addCost("gripperPose", goalTrackingCost, 1e4)
+runningCostModel.addCost("uReg", uRegCost, 1e-1)
+# runningCostModel.addCost("vsa", vsaCost, 1e-1)
+terminalCostModel.addCost("gripperPose", goalTrackingCost, 4e4)
 
 B = .001*np.eye(int(state.nv/2))
 
@@ -84,7 +84,7 @@ print('Finally reached = ', solver.problem.terminalData.differential.multibody.p
     "EE")].translation.T)
 
 log = solver.getCallbacks()[0]
-print(aslr_to.u_squared(log))
+print(np.sum(aslr_to.u_squared(log)[:2]))
 # print("printing usquared")
 # print(u1)
 # print("______")

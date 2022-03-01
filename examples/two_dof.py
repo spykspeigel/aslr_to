@@ -87,9 +87,9 @@ print('Finally reached = ', solver.problem.terminalData.differential.multibody.p
 log = solver.getCallbacks()[0]
 u1 , u2 = aslr_to.u_squared(log)
 print("printing usquared")
-print(u1)
-print("______")
-print(u2)
+print(np.sum(aslr_to.u_squared(log)))
+# print("______")
+# print(u2)
 # Plotting the solution and the DDP convergence
 if WITHPLOT:
     log = solver.getCallbacks()[0]

@@ -52,7 +52,7 @@ runningCostModel.addCost("feascost", feasCost, 1e4)
 
 terminalCostModel.addCost("gripperPose", goalTrackingCost, 1e4)
 
-dt = 1e-3
+dt = 1e-2
 runningModel = crocoddyl.IntegratedActionModelEuler(
     crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, runningCostModel), dt)
 terminalModel = crocoddyl.IntegratedActionModelEuler(
@@ -76,8 +76,8 @@ if WITHDISPLAY:
 solver.setCallbacks([crocoddyl.CallbackLogger(), crocoddyl.CallbackVerbose(),inv_dyn.CallbackResidualLogger('feascost') ])
 
 xs = [x0] * (solver.problem.T + 1)
-# us = solver.problem.quasiStatic([x0] * solver.problem.T)
-us = [np.zeros(4)]* (solver.problem.T )
+us = solver.problem.quasiStatic([x0] * solver.problem.T)
+# us = [np.zeros(4)]* (solver.problem.T )
 solver.th_stop = 1e-7
 # Solving it with the DDP algorithm
 solver.solve(xs,us,400)
@@ -87,7 +87,7 @@ print('Finally reached = ', solver.problem.terminalData.differential.multibody.p
 
 log = solver.getCallbacks()[2]
 log1 = solver.getCallbacks()[0]
-print(aslr_to.u_squared(log1))
+print(np.sum(aslr_to.u_squared(log1)[:2]))
 # print("printing usquared")
 # print(u1)
 # print("______")

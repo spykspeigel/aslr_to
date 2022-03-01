@@ -68,7 +68,7 @@ terminalModel = crocoddyl.IntegratedActionModelEuler(
 
 
 l_lim_0=0
-runningModel.u_lb = np.array([ -100, -100, -1000,-1000, 0.1, 0.1])
+runningModel.u_lb = np.array([ -100, -100, -1000,-1000, 0.001, 0.001])
 runningModel.u_ub = np.array([ 100, 100, 1000, 1000,100,100])
 T = 200
 

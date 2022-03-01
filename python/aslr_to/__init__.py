@@ -35,7 +35,7 @@ def u_squared(log):
     u_sqaured = np.zeros(len(log.us[0]))
     for i in range(len(log.us)):
         for j in range(len(log.us[0])):
-            u_sqaured[j] += abs(log.us[i][j])
+            u_sqaured[j] += log.us[i][j]**2
     return u_sqaured
 
 def plotOCSolution(xs=None, us=None, figIndex=1, show=True, figTitle=""):
