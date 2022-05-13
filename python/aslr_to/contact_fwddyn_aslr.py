@@ -59,7 +59,7 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
                         data.multibody.contacts.a0, JMinvJt_damping_)
         data.xout[:nv_l] = data.multibody.pinocchio.ddq
         data.xout[nv_l:] = np.dot(data.Binv, u + tau_couple[-self.state.nv_m:])
-        self.contacts.updateAcceleration(data.multibody.contacts, data.xout)
+        self.contacts.updateAcceleration(data.multibody.contacts, data.xout[:nv_l])
         self.contacts.updateForce(data.multibody.contacts, data.multibody.pinocchio.lambda_c)
         self.costs.calc(data.costs, x, u)
         data.cost = data.costs.cost
@@ -105,10 +105,11 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         data.df_dx[:nc, :nv_l] = np.dot(f_partial_dtau, data.multibody.pinocchio.dtau_dq+ self.K[:,-nv_l:])
         data.df_dx[:nc, nv_l:2*nv_l] = np.dot(f_partial_dtau, data.multibody.pinocchio.dtau_dv)
         data.df_dx[:nc, 2*nv_l:-nv_m] = -np.dot(f_partial_dtau,  self.K[:,-self.state.nv_m:])
-        data.df_dx[:nc, :] += np.dot(f_partial_da, data.multibody.contacts.da0_dx[:nc,:])
-
-        self.contacts.updateAccelerationDiff(data.multibody.contacts, data.Fx)
-        self.contacts.updateForceDiff(data.multibody.contacts, data.df_dx, data.df_du)
+        # print(data.multibody.contacts.da0_dx[:nc,:].shape)
+        data.df_dx[:nc, :2*nv_l] += np.dot(f_partial_da, data.multibody.contacts.da0_dx[:nc,:])
+        print( data.Fx[:nv_l,2*nv_l].shape)
+        self.contacts.updateAccelerationDiff(data.multibody.contacts, data.Fx[:nv_l,:2*nv_l])
+        self.contacts.updateForceDiff(data.multibody.contacts, data.df_dx[:,:2*nv_l], data.df_du)
 
         self.costs.calcDiff(data.costs, x, u)
 

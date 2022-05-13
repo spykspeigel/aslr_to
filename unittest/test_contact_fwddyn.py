@@ -9,7 +9,7 @@ import aslr_to
 from test_utils_ex import NUMDIFF_MODIFIER, assertNumDiff
 
 ROBOT_MODEL = example_robot_data.load("anymal").model
-STATE = crocoddyl.StateMultibody(ROBOT_MODEL)
+STATE = aslr_to.StateMultiASR(ROBOT_MODEL)
 K = np.zeros([STATE.pinocchio.nv,STATE.pinocchio.nv])
 K[-12:,-12:]=10*np.eye(12)
 B = .001*np.eye(STATE.nv_m)
@@ -31,10 +31,10 @@ COSTS = crocoddyl.CostModelSum(STATE, nu)
 mu, R = 0.7, np.eye(3)
 SUPPORT_FEET = [
     ROBOT_MODEL.getFrameId('LF_FOOT')]
-for i in SUPPORT_FEET:
-    frictionCone = crocoddyl.CostModelResidual(
-        STATE, crocoddyl.ResidualModelContactForce(STATE, i, pinocchio.Force.Zero(), 3,ACTUATION.nu))
-    COSTS.addCost(ROBOT_MODEL.frames[i].name + "_frictionCone", frictionCone, 1e1)
+# for i in SUPPORT_FEET:
+#     frictionCone = crocoddyl.CostModelResidual(
+#         STATE, crocoddyl.ResidualModelContactForce(STATE, i, pinocchio.Force.Zero(), 3,ACTUATION.nu))
+#     COSTS.addCost(ROBOT_MODEL.frames[i].name + "_frictionCone", frictionCone, 1e1)
 
 
 MODEL = aslr_to.DifferentialContactASLRFwdDynModel(STATE, ACTUATION, CONTACTS, COSTS,K,B)
@@ -56,7 +56,7 @@ assertNumDiff( DATA.Fu, DATA_ND.Fu, NUMDIFF_MODIFIER *
 assertNumDiff( DATA.Fx, DATA_ND.Fx, NUMDIFF_MODIFIER *
                 MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 
-assertNumDiff(DATA.Lx, DATA_ND.Lx, NUMDIFF_MODIFIER *
-                MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 assertNumDiff(DATA.Lu, DATA_ND.Lu, NUMDIFF_MODIFIER *
+                MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
+assertNumDiff(DATA.Lx[36:], DATA_ND.Lx[36:], NUMDIFF_MODIFIER *
                 MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
