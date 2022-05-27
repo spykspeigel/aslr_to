@@ -31,7 +31,7 @@ dt = 1e-2
 
 runningCostModel.addCost("uReg", uRegCost, 1e-2)
 runningCostModel.addCost("xReg", xRegCost, 1e-3)
-runningCostModel.addCost("xGoalR", xPendCost, 1e0)
+# runningCostModel.addCost("xGoalR", xPendCost, 1e0)
 terminalCostModel.addCost("xGoal", xPendCost, 1e4)
 
 runningModel = crocoddyl.IntegratedActionModelEuler(
@@ -40,7 +40,7 @@ terminalModel = crocoddyl.IntegratedActionModelEuler(
     crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, terminalCostModel), dt)
 
 # Creating the shooting problem and the FDDP solver
-T = 50
+T = 200
 x0 = np.array([3.14, 0., 0., 0.])
 problem = crocoddyl.ShootingProblem(x0, [runningModel] * T, terminalModel)
 problem.nthreads = 1  # TODO(cmastalli): Remove after Crocoddyl supports multithreading with Python-derived models
@@ -56,17 +56,15 @@ elif WITHDISPLAY:
 elif WITHPLOT:
     solver.setCallbacks([crocoddyl.CallbackLogger(), crocoddyl.CallbackVerbose()])
 else:
-    solver.setCallbacks([crocoddyl.CallbackVerbose()])
+    solver.setCallbacks([crocoddyl.CallbackLogger(),crocoddyl.CallbackVerbose()])
 
 # Solving the problem with the FDDP solver
 solver.solve()
 
-# log = solver.getCallbacks()[0]
+log = solver.getCallbacks()[0]
 # u1 , u2 = aslr_to.u_squared(log)
-# print("printing usquared")
-# print(u1)
-# print("______")
-# print(u2)
+print("printing usquared")
+print(aslr_to.u_squared(log))
 # Plotting the entire motion
 if WITHPLOT:
     log = solver.getCallbacks()[0]

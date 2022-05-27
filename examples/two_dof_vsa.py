@@ -121,6 +121,6 @@ for i in range(len(log.xs)):
 
 t=np.arange(0,T*dt,dt)
 
-savemat("optimised_trajectory_vsa.mat", {"q1": x1,"q2":x2,"t":t})
-savemat("controls_vsa.mat", {"u1": u1,"u2":u2,"t":t})
-savemat("stiffness_vsa.mat", {"u1": u3,"u2":u4,"t":t})
+# savemat("optimised_trajectory_vsa.mat", {"q1": x1,"q2":x2,"t":t})
+# savemat("controls_vsa.mat", {"u1": u1,"u2":u2,"t":t})
+# savemat("stiffness_vsa.mat", {"u1": u3,"u2":u4,"t":t})

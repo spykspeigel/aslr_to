@@ -9,6 +9,7 @@ import numpy as np
 import example_robot_data
 import aslr_to
 import time
+import  matplotlib.pyplot as plt
 WITHDISPLAY = 'display' in sys.argv or 'CROCODDYL_DISPLAY' in os.environ
 WITHPLOT = 'plot' in sys.argv or 'CROCODDYL_PLOT' in os.environ
 
@@ -33,10 +34,10 @@ goalTrackingCost = crocoddyl.CostModelResidual(state, framePlacementResidual)
 xRegCost = crocoddyl.CostModelResidual(state, xResidual)
 
 # Then let's added the running and terminal cost functions
-runningCostModel.addCost("gripperPose", goalTrackingCost, 1e0)
-runningCostModel.addCost("xReg", xRegCost, 1e-1)
-runningCostModel.addCost("uReg", uRegCost, 1e-1)
-terminalCostModel.addCost("gripperPose", goalTrackingCost, 4e4)
+runningCostModel.addCost("gripperPose", goalTrackingCost, 1e-1)
+runningCostModel.addCost("xReg", xRegCost, 1e-3)
+runningCostModel.addCost("uReg", uRegCost, 1e0)
+terminalCostModel.addCost("gripperPose", goalTrackingCost, 1e4)
 
 dt = 1e-2
 runningModel = crocoddyl.IntegratedActionModelEuler(
@@ -46,7 +47,7 @@ terminalModel = crocoddyl.IntegratedActionModelEuler(
 
 T = 200
 
-q0 = np.array([.1,0])
+q0 = np.array([.0,0])
 x0 = np.concatenate([q0,pinocchio.utils.zero(state.nv)])
 
 problem = crocoddyl.ShootingProblem(x0, [runningModel] * T, terminalModel)
@@ -54,7 +55,6 @@ problem = crocoddyl.ShootingProblem(x0, [runningModel] * T, terminalModel)
 # Creating the DDP solver for this OC problem, defining a logger
 solver = crocoddyl.SolverDDP(problem)
 cameraTF = [2., 2.68, 0.54, 0.2, 0.62, 0.72, 0.22]
-
 
 if WITHDISPLAY:
     display = crocoddyl.GepettoDisplay(two_dof)
@@ -66,6 +66,10 @@ us = solver.problem.quasiStatic([x0] * solver.problem.T)
 solver.th_stop = 1e-7
 # Solving it with the DDP algorithm
 solver.solve()
+
+
+print('Finally reached = ', solver.problem.runningDatas.tolist()[0].differential.multibody.pinocchio.oMf[robot_model.getFrameId(
+    "EE")].translation.T)
 
 print('Finally reached = ', solver.problem.terminalData.differential.multibody.pinocchio.oMf[robot_model.getFrameId(
     "EE")].translation.T)
@@ -87,3 +91,12 @@ if WITHDISPLAY:
     while True:
         display.displayFromSolver(solver)
         time.sleep(2.0)
+
+K=solver.K.tolist()
+K_temp = []
+for i in range(len(K)):
+    K_temp.append(np.linalg.norm(K[i]))
+
+plt.plot(K_temp)
+plt.show()
+# xs = problem.rollout(us)

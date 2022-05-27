@@ -22,10 +22,12 @@ class DifferentialFreeASRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbstr
             u = np.zeros(self.nu)
         nq=self.state.nq
         nv=self.state.nv
-        q_l = x[:int(nq/2)]
-        q_m = x[int(nq/2):nq]
-        v_l = x[-nv:-int(nv/2)]
-        v_m = x[-int(nv/2):]
+        nv_l = int(nv/2)
+        nq_l = int(nq/2)
+        q_l = x[:nq_l]
+        q_m = x[nq_l:nq]
+        v_l = x[-nv:-nv_l]
+        v_m = x[-nv_l:]
         x_m = np.hstack([q_m,v_m])
 
         self.actuation.calc(data.actuation, x_m, u)
@@ -37,6 +39,7 @@ class DifferentialFreeASRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbstr
         data.M = data.pinocchio.M
         data.Minv = np.linalg.inv(data.M)
         data.Binv = np.linalg.inv(self.B)
+        #data.xout[:int(nv/2)] = pinocchio.aba(self.state.pinocchio,data.pinocchio,q_l,v_l,np.zeros(nv_l))+np.dot(data.Minv,  - data.tau_couple)
         data.xout[:int(nv/2)] = np.dot(data.Minv, (tau[:int(nv/2)] - data.pinocchio.nle - data.tau_couple))
 
         # Computing the motor side dynamics
@@ -56,23 +59,29 @@ class DifferentialFreeASRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbstr
         if u is None:
             u = self.unone
         nq, nv = self.state.nq, self.state.nv
-        q_l = x[:int(nq/2)]
-        q_m = x[int(nq/2):nq]
-        v_l = x[-nv:-int(nv/2)]
-        v_m = x[-int(nv/2):]
+        nv_l = int(nv/2)
+        nq_l = int(nq/2)
+        q_l = x[:nq_l]
+        q_m = x[nq_l:nq]
+        v_l = x[-nv:-nv_l]
+        v_m = x[-nv_l:]
 
         x_m = np.hstack([q_m,v_m])
         # Computing the actuation derivatives
         self.actuation.calcDiff(data.actuation, x_m, u)
-        tau = data.actuation.tau
-        
+        data.tau_couple = np.dot(self.K, q_l-q_m)
+
         # Computing the dynamics derivatives
         pinocchio.computeRNEADerivatives(self.state.pinocchio, data.pinocchio, q_l, v_l, data.xout[:int(nv/2)])
+        # pinocchio.computeABADerivatives(self.state.pinocchio, data.pinocchio, q_l, v_l, np.zeros(nv_l))
+
         ddq_dq = np.dot(data.Minv, ( - data.pinocchio.dtau_dq - self.K))
         ddq_dv = np.dot(data.Minv, ( - data.pinocchio.dtau_dv))
-        data.Fx[:int(nv/2) , :int(nv/2)] = ddq_dq
+        # data.Fx[:int(nv/2) , :int(nv/2)] = data.pinocchio.ddq_dq - np.dot(data.Minv, self.K)
+        data.Fx[:int(nv/2) , :int(nv/2)] = ddq_dq 
         data.Fx[:int(nv/2), int(nv/2):nv] = np.dot(data.Minv,self.K)
         data.Fx[:int(nv/2), nv:-int(nv/2)] = ddq_dv
+
         data.Fx[int(nv/2):, :int(nv/2)] = np.dot(data.Binv,self.K)
         data.Fx[int(nv/2):, int(nv/2):nv] = -np.dot(data.Binv,self.K)
         
