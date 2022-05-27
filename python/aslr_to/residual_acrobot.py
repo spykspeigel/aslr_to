@@ -15,8 +15,6 @@ class ResidualModelDoublePendulum(crocoddyl.ResidualModelAbstract):
         c1, c2 = np.cos(x[0]), np.cos(x[1])
         s1, s2 = np.sin(x[0]), np.sin(x[1])
 
-        # self.activation.calcDiff(data.activation, data.residual.r)
-
         data.Rx[:2, :2] = np.diag([c1, c2])
         data.Rx[2:4, :2] = np.diag([-s1, s2])
         data.Rx[4:6, 4:6] = np.diag([1, 1])

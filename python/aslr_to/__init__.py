@@ -1,19 +1,12 @@
 from .statemultibody_aslr import (StateMultibodyASR)
-from .contact_fwddyn import (DifferentialContactASLRFwdDynModel, DifferentialContactASLRFwdDynData)
 from .free_fwddyn_asr import (DifferentialFreeASRFwdDynamicsModel,DifferentialFreeASRFwdDynamicsData)
 from .free_fwddyn_vsa import (DifferentialFreeFwdDynamicsModelVSA, DifferentialFreeFwdDynamicsDataVSA)
-from .free_fwddyn_vsa_qb import (DifferentialFreeFwdDynamicsModelQb, DifferentialFreeFwdDynamicsDataQb)
 from .residual_frame_placement import (ResidualModelFramePlacementASR,ResidualDataFramePlacementASR)
 from .integrated_action import (IntegratedActionModelEulerASR, IntegratedActionDataEulerASR)
 from .stiffness_cost import (CostModelStiffness, CostDataStiffness)
 from .actuation_vsa import VSAASRActuation
 from .actuation_aslr import ASRActuation
-from .actuation_condensed import ASRActuationCondensed
-from .actuation_vsa_qb import (QbActuationModel,QbActuationData)
-from .soft_residual_model import (SoftDynamicsResidualModel,SoftDynamicsResidualData)
-from .vsa_dynamics_residual import (VSADynamicsResidualModel, VSADynamicsResidualData)
 from .residual_acrobot import (ResidualModelDoublePendulum,ResidualDataDoublePendulum)
-from .solver import DDPASLR
 import numpy as np
 import crocoddyl
 import pinocchio
@@ -295,4 +288,3 @@ class ActuationDataDoublePendulum(crocoddyl.ActuationDataAbstract):
         else:
             self.S[int(model.nv/2),0] = 1
             # self.S[int(model.nv/2):8,:1] = np.eye(1)
-            # print(self.S)
