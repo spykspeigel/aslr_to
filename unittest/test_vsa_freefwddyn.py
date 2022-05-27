@@ -9,21 +9,14 @@ import numpy as np
 import aslr_to
 import example_robot_data
 from test_utils_ex import NUMDIFF_MODIFIER, assertNumDiff
-robot_model = example_robot_data.load('talos_arm').model
+two_dof = example_robot_data.load('asr_twodof')
+robot_model = two_dof.model
 state = aslr_to.StateMultibodyASR(robot_model)
 actuation = aslr_to.ASRActuation(state)
-nu = actuation.nu +1
+nu = actuation.nu
 costs = crocoddyl.CostModelSum(state, nu)
 
-framePlacementResidual = aslr_to.ResidualModelFramePlacementASR(state, robot_model.getFrameId("gripper_left_joint"),
-                                                               pinocchio.SE3(np.eye(3), np.array([.0, .0, .4])), nu)
-goalTrackingCost = crocoddyl.CostModelResidual(state, framePlacementResidual)
-costs.addCost("gripperPose",goalTrackingCost,nu)
-xResidual = crocoddyl.ResidualModelControl(state, nu)
-xRegCost = crocoddyl.CostModelResidual(state, xResidual)
-costs.addCost("xReg", xRegCost, 1e-2)
-
-model = aslr_to.DifferentialFreeFwdDynamicsModelVSA(state, actuation, costs)
+model = aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, costs)
 x =   model.state.rand()
 u = np.random.rand(model.nu)
 data =  model.createData()
@@ -41,6 +34,6 @@ assertNumDiff(data.Fx, DATA_ND.Fx, NUMDIFF_MODIFIER *
                 MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 
 assertNumDiff(data.Lx, DATA_ND.Lx, NUMDIFF_MODIFIER *
-                1e-6)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
+                MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 assertNumDiff(data.Lu, DATA_ND.Lu, NUMDIFF_MODIFIER *
-                1e-6)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
+                MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)

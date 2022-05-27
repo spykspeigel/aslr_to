@@ -60,7 +60,6 @@ class DDPASLR(crocoddyl.SolverAbstract):
                 if self.dV_exp >= 0:
                     if d1 < self.th_grad or not self.isFeasible or self.dV > self.th_acceptStep * self.dV_exp:
                         # Accept step
-                        print("2nd check")
                         self.wasFeasible = self.isFeasible
                         self.setCandidate(self.xs_try, self.us_try, True)
                         self.cost = self.cost_try
@@ -71,7 +70,6 @@ class DDPASLR(crocoddyl.SolverAbstract):
                 self.increaseRegularization()
                 if self.x_reg == self.reg_max:
                     return self.xs, self.us, False
-                    print("4th check")
             self.stepLength = a
             self.iter = i
             self.stop = self.stoppingCriteria()
@@ -80,7 +78,6 @@ class DDPASLR(crocoddyl.SolverAbstract):
                 [c(self) for c in self.getCallbacks()]
 
             if self.wasFeasible and self.stop < self.th_stop:
-                print("5th check")
                 return self.xs, self.us, True
         return self.xs, self.us, False
 
@@ -138,17 +135,22 @@ class DDPASLR(crocoddyl.SolverAbstract):
                 self.Quu[t][range(model.nu), range(model.nu)] += self.u_reg
 
             self.computeGains(t)
-
-            self.Vx[t][:] = self.Qx[t] - np.dot(self.K[t].T, self.Qu[t])
-            self.Vxx[t][:, :] = self.Qxx[t] - np.dot(self.Qxu[t], self.K[t])
+            self.Vx[t][:] = self.Qx[t]
+            self.Vxx[t][:, :] = self.Qxx[t]
+            if model.nu != 0:
+                self.Vx[t][:] -= np.dot(self.K[t].T, self.Qu[t])
+                self.Vx[t][:] -= np.dot(self.Qxu[t], self.k[t])
+                self.Vx[t][:] += np.dot(self.K[t].T, np.dot(self.Quu[t], self.k[t]))
+                self.Vxx[t][:] -=   2*np.dot(self.Qxu[t], self.K[t]) 
+                # self.Vxx[t][:] -= np.dot( self.K[t].T,self.Qxu[t].T)
+                self.Vxx[t][:] += np.dot(self.K[t].T, np.dot(self.Quu[t], self.K[t]))
             self.Vxx[t][:, :] = 0.5 * (self.Vxx[t][:, :] + self.Vxx[t][:, :].T)  # ensure symmetric
-
             if self.x_reg != 0:
                 self.Vxx[t][range(model.state.ndx), range(model.state.ndx)] += self.x_reg
 
             # Compute and store the Vx gradient at end of the interval (rollout state)
-            if not self.isFeasible:
-                self.Vx[t] += np.dot(self.Vxx[t], self.fs[t])
+            # if not self.isFeasible:
+            #     self.Vx[t] += np.dot(self.Vxx[t], self.fs[t])
 
             raiseIfNan(self.Vxx[t], ArithmeticError('backward error'))
             raiseIfNan(self.Vx[t], ArithmeticError('backward error'))
@@ -179,7 +181,13 @@ class DDPASLR(crocoddyl.SolverAbstract):
         try:
             if self.Quu[t].shape[0] > 0:
                 Lb = scl.cho_factor(self.Quu[t])
-                self.K[t][:, :] = scl.cho_solve(Lb, self.Qux[t])
+                self.K[t][:, :] = scl.cho_solve(Lb, self.Qxu[t].T)
+                # if np.linalg.norm(self.K[t])>1:
+                #     # print("klesss")
+                #     self.Qxu[t][:,:] = self.Qxu[t]/np.linalg.norm(self.K[t])
+                #     # self.K[t] = self.K[t]/np.linalg.norm(self.K[t])
+                #     self.K[t][:, :] = scl.cho_solve(Lb, self.Qxu[t].T)
+                    # print(np.linalg.norm(self.K[t]))
                 self.k[t][:] = scl.cho_solve(Lb, self.Qu[t])
             else:
                 pass

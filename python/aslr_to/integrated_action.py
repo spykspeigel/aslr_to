@@ -5,13 +5,13 @@ import crocoddyl
 
 class IntegratedActionModelEulerASR(crocoddyl.ActionModelAbstract):
     def __init__(self, diffModel, timeStep=1e-3, withCostResiduals=True):
-        crocoddyl.ActionModelAbstract.__init__(self, diffModel.state, int(diffModel.state.nv/2), diffModel.nr)
+        crocoddyl.ActionModelAbstract.__init__(self, diffModel.state, diffModel.nu, diffModel.nr)
         self.differential = diffModel
         self.withCostResiduals = withCostResiduals
-        self.timeStep = timeStep
+        self.dt = timeStep
 
     def calc(self, data, x, u=None):
-        nq, dt = self.state.nq, self.timeStep
+        nq, dt = self.state.nq, self.dt
         self.differential.calc(data.differential, x, u)
         acc=data.differential.xout
         if self.withCostResiduals:
@@ -26,7 +26,7 @@ class IntegratedActionModelEulerASR(crocoddyl.ActionModelAbstract):
         return data.xnext, data.cost
 
     def calcDiff(self, data, x, u=None):
-        nv, dt = self.state.nv, self.timeStep
+        nv, dt = self.state.nv, self.dt
         self.differential.calcDiff(data.differential, x, u)
         dxnext_dx, dxnext_ddx = self.state.Jintegrate(x, data.dx)
         da_dx, da_du = data.differential.Fx, data.differential.Fu

@@ -9,19 +9,29 @@ import numpy as np
 import aslr_to
 import example_robot_data
 from test_utils_ex import NUMDIFF_MODIFIER, assertNumDiff
-robot_model = example_robot_data.load('talos_arm').model
+two_dof = example_robot_data.load('asr_twodof')
+robot_model = two_dof.model
 state = aslr_to.StateMultibodyASR(robot_model)
-actuation = aslr_to.ASRActuation(state)
-nu = actuation.nu +1
+actuation = aslr_to.VSAASRActuation(state)
+nu = 2*actuation.nu
 costs = crocoddyl.CostModelSum(state, nu)
 
-framePlacementResidual = aslr_to.ResidualModelFramePlacementASR(state, robot_model.getFrameId("gripper_left_joint"),
+framePlacementResidual = aslr_to.ResidualModelFramePlacementASR(state, robot_model.getFrameId("EE"),
                                                                pinocchio.SE3(np.eye(3), np.array([.0, .0, .4])), nu)
 goalTrackingCost = crocoddyl.CostModelResidual(state, framePlacementResidual)
 costs.addCost("gripperPose",goalTrackingCost,nu)
 xResidual = crocoddyl.ResidualModelControl(state, nu)
 xRegCost = crocoddyl.CostModelResidual(state, xResidual)
 costs.addCost("xReg", xRegCost, 1e-2)
+
+uActivation = crocoddyl.ActivationModelWeightedQuad(np.array([0.]*2 + [1e0] * 2 ))
+uResidual = crocoddyl.ResidualModelControl(state, nu)
+uRegCost = crocoddyl.CostModelResidual(state, uActivation,uResidual)
+
+lamda = .1
+Kref = np.zeros(int(nu/2))
+vsaCost = aslr_to.CostModelStiffness(state, nu, lamda,Kref)
+costs.addCost("vsa", vsaCost, 1e0)
 
 model = aslr_to.DifferentialFreeFwdDynamicsModelVSA(state, actuation, costs)
 x =   model.state.rand()
