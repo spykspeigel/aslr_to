@@ -1,4 +1,4 @@
-# asr_to (Trajectory Optimsation For Articulated Soft  Robots)
+# ASR_TO (Trajectory Optimsation For Articulated Soft  Robots)
 ## A prototype code in python for optimal control problem of soft actuated robots.
 
 * [crocodddyl](https://github.com/stack-of-tasks/pinocchio)
