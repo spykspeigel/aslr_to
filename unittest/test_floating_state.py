@@ -7,7 +7,7 @@ import aslr_to
 from test_utils_ex import NUMDIFF_MODIFIER, assertNumDiff
 
 robot_model = example_robot_data.load("anymal").model
-state = crocoddyl.StateMultibody(robot_model)
+state = crocoddyl.StateSoftMultibody(robot_model)
 state_nd = crocoddyl.StateNumDiff(state)
 x1 = state.rand()
 x2 = state.rand()

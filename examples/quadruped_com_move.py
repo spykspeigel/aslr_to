@@ -23,11 +23,14 @@ x0 = np.concatenate([q0, v0, np.zeros(24)])
 
 # Setting up the 3d walking problem
 lfFoot, rfFoot, lhFoot, rhFoot = "LF_FOOT", "RF_FOOT", "LH_FOOT", "RH_FOOT"
-gait = SimpleQuadrupedalGaitProblem(anymal.model, lfFoot, rfFoot, lhFoot, rhFoot)
+S = np.zeros([12,12])
+S[:12,:12] = np.diag(np.ones(12))
+gait = SimpleQuadrupedalGaitProblem(anymal.model, lfFoot, rfFoot, lhFoot, rhFoot,S)
 
 timeStep = 1e-3
-numKnots = 400
-comGoTo = 0.35
+numKnots =500
+comGoTo = 0.25
+
 solver = crocoddyl.SolverFDDP(gait.createCoMGoalProblem(x0, comGoTo, timeStep, numKnots))
 solver.problem.nthreads = 1
 cameraTF = [2.0, 2.68, 0.84, 0.2, 0.62, 0.72, 0.22]
@@ -52,11 +55,11 @@ us = solver.problem.quasiStatic([x0] * solver.problem.T)
 # rd = solver.problem.runningDatas.tolist()
 # td = solver.problem.terminalData.differential.tmp_xstatic
 # for i in range(len(rd)):
-#     xs[i] = rd[i].differential.tmp_xstatic
+    # xs[i] = rd[i].differential.tmp_xstatic
 # xs[-1] = rd[-1].differential.tmp_xstatic
 # xs[-1] = solver.problem.terminalData.differential.tmp_xstatic
-us = [np.zeros(12)] * solver.problem.T
-solver.solve(xs, us, 300)
+# us = [np.zeros(12)] * solver.problem.T
+solver.solve(xs, us, 100)
 
 # print(rd[0].differential.multibody.pinocchio.oMf[anymal.model.getFrameId(
 #     lfFoot)].translation.T)

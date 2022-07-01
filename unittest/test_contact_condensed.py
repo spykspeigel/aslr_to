@@ -9,7 +9,7 @@ import aslr_to
 from test_utils_ex import NUMDIFF_MODIFIER, assertNumDiff
 
 ROBOT_MODEL = example_robot_data.load("anymal").model
-STATE = crocoddyl.StateMultibody(ROBOT_MODEL)
+STATE = crocoddyl.StateSoftMultibody(ROBOT_MODEL)
 ACTUATION = aslr_to.FreeFloatingActuationCondensed(STATE,24)
 
 SUPPORT_FEET = [
@@ -25,8 +25,6 @@ for i in SUPPORT_FEET:
     supportContactModel = crocoddyl.ContactModel3D(STATE, xref, nu, np.array([0., 50.]))
     CONTACTS.addContact(ROBOT_MODEL.frames[i].name + "_contact", supportContactModel)
 COSTS = crocoddyl.CostModelSum(STATE, nu)
-
-mu, R = 0.7, np.eye(3)
 
 
 # for i in SUPPORT_FEET:

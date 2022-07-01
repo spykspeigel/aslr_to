@@ -2,13 +2,13 @@ import numpy as np
 import pinocchio
 import crocoddyl
 
-class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstract):
-    def __init__(self, state, actuation, contacts, costs, K=None, B=None, S=None):
+class ActionModelImpulseASLRFwdDyn(crocoddyl.ActionModelAbstract):
+    def __init__(self, state, actuation, impulses, costs, K=None, B=None, r_coeff=0.):
         nu =  actuation.nu 
-        crocoddyl.DifferentialActionModelAbstract.__init__(self, state, nu, costs.nr)
+        crocoddyl.ActionModelAbstract.__init__(self, state, nu, costs.nr)
         self.actuation = actuation  
         self.costs = costs
-        self.contacts = contacts
+        self.impulses = impulses
 
         #K is the stiffness matrix
         if K is None:
@@ -17,15 +17,13 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
             self.K[-nu:,-nu:]= 1*np.eye(nu)
         else:
             self.K = K
-        if S is None:
-            self.S = np.eye(state.nv_m)
-        else:
-            self.S = S
+
         #B is the motor intertia matrix
         if B is None:
             self.B = .001*np.eye(self.state.nv_m)   
         else:
             self.B = B 
+        self.r_coeff = r_coeff
 
     def calc(self, data, x, u):
         if len(x) != self.state.nx:
@@ -39,31 +37,27 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         q_l = x[:nq_l]
         v_l = x[nq_l:nl]
         q_m = x[nl:-self.state.nv_m]
-
-        x_l = x[:nl]
-        
-        # using pinocchio.diff to calculate the difference between the two vectors. doesnot make a difference
-        # state_diff = pinocchio.difference(self.state.pinocchio,  np.hstack([q_l[:7],q_m]),q_l)
-        # tau_couple = np.dot(self.K,state_diff)
-        tau_couple = np.zeros(nv_l)
-        tau_couple[-self.state.nv_m:] = np.dot(self.K[-self.nu:,-self.nu:], q_l[-self.state.nv_m:]-q_m)
+        x_m = x[nl:]
 
         pinocchio.computeAllTerms(self.state.pinocchio, data.multibody.pinocchio, q_l, v_l)
         pinocchio.updateFramePlacements(self.state.pinocchio, data.multibody.pinocchio)
         pinocchio.computeCentroidalMomentum(self.state.pinocchio, data.multibody.pinocchio, q_l, v_l)
 
         self.actuation.calc(data.multibody.actuation, x, u)
-        self.contacts.calc(data.multibody.contacts, x)
+        self.impulses.calc(data.multibody.impulses, x)
         data.Binv = np.linalg.inv(self.B)
         tau = data.multibody.actuation.tau
 
         JMinvJt_damping_=0.
-        pinocchio.forwardDynamics(self.state.pinocchio, data.multibody.pinocchio, -tau_couple, data.multibody.contacts.Jc[:nc,:nv_l],
-                        data.multibody.contacts.a0, JMinvJt_damping_)
-        data.xout[:nv_l] = data.multibody.pinocchio.ddq
-        data.xout[nv_l:] = np.dot(data.Binv, u + tau_couple[-self.state.nv_m:])
-        self.contacts.updateAcceleration(data.multibody.contacts, data.xout[:nv_l])
-        self.contacts.updateForce(data.multibody.contacts, data.multibody.pinocchio.lambda_c)
+        pinocchio.impulseDynamics(self.state.pinocchio, data.multibody.pinocchio, v_l, data.multibody.impulses.Jc[:nc,:nv_l],
+                        self.r_coeff, JMinvJt_damping_)
+        data.xnext[:nq_l] = q_l
+        data.xnext[nq_l:nv_l] = data.multibody.pinocchio.dq_after
+        data.xnext[nq_l+nq_l:] = x_m
+
+        self.impulses.updateVelocity(data.multibody.impulses, data.multibody.pinocchio.dq_after)
+
+        self.impulses.updateForce(data.multibody.impulses, data.multibody.pinocchio.impulse_c)
         self.costs.calc(data.costs, x, u)
         data.cost = data.costs.cost
 
@@ -87,9 +81,9 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         self.contacts.calcDiff(data.multibody.contacts, x_l)
         #Extracting the TopLeft corner block diagonal matrix
         a_partial_dtau = data.Kinv[:nv_l,:nv_l]
-        a_partial_da = data.Kinv[:nv_l,:nc]
+        a_partial_da = data.Kinv[:nv_l,-nc:]
         f_partial_dtau = data.Kinv[nv_l:,:nv_l]
-        f_partial_da = data.Kinv[nv_l:,:nc]
+        f_partial_da = data.Kinv[nv_l:,-nc:]
 
         #Jacobian for the link side coordinates  i.e. \dot\dot{q}
         data.Fx[:nv_l,:nv_l] = -np.dot(a_partial_dtau, data.multibody.pinocchio.dtau_dq + self.K[:,-nv_l:])
@@ -102,7 +96,7 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         data.Fx[nv_l:, 2*nv_l:-nv_m] = -np.dot(data.Binv,self.K[-self.actuation.nu:, -self.actuation.nu:])
         
         #Jacobian w.r.t control inputs (only motor side part will be non-zero)
-        data.Fu[nv_l:, :] = np.dot(data.Binv, np.dot(self.S,data.multibody.actuation.dtau_du[nv_l:, :]))
+        data.Fu[nv_l:, :] = np.dot(data.Binv, data.multibody.actuation.dtau_du[nv_l:, :])
 
         #computing the jacobian of contact forces (required with contact dependent costs)
         data.df_dx[:nc, :nv_l] = np.dot(f_partial_dtau, data.multibody.pinocchio.dtau_dq + self.K[:,-nv_l:])
@@ -141,7 +135,7 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
             data.tmp_xstatic[nq+nv:-nv_m] = np.dot(np.linalg.inv(self.K[-nv_m:,-nv_m:]),data.tmp_ustatic) - data.tmp_xstatic[-nv_m:]
             return data.tmp_ustatic
         else:
-            data.tmp_ustatic[:] = np.dot(np.linalg.pinv(data.multibody.actuation.dtau_du)[:,nv_m:],
+            data.tmp_ustatic[nv:nv + na] = np.dot(np.linalg.pinv(data.multibody.actuation.dtau_du.reshape(nv, na)),
                                                   data.multibody.pinocchio.tau)
             data.multibody.pinocchio.tau[:] *= 0.
             return data.tmp_ustatic
