@@ -9,7 +9,11 @@ import aslr_to
 from test_utils_ex import NUMDIFF_MODIFIER, assertNumDiff
 
 ROBOT_MODEL = example_robot_data.load("anymal").model
+<<<<<<< HEAD
 STATE = crocoddyl.StateSoftMultibody(ROBOT_MODEL)
+=======
+STATE = aslr_to.StateMultiASR(ROBOT_MODEL)
+>>>>>>> 5023d494a47d3cee1368b9378931111ce53645fb
 K = np.zeros([STATE.pinocchio.nv,STATE.pinocchio.nv])
 K[-12:,-12:]=1*np.eye(12)
 B = .01*np.eye(STATE.nv_m)
@@ -36,11 +40,21 @@ for i in SUPPORT_FEET:
     CONTACTS.addContact(ROBOT_MODEL.frames[i].name + "_contact", supportContactModel)
 COSTS = crocoddyl.CostModelSum(STATE, nu)
 
+<<<<<<< HEAD
 # mu, R = 0.7, np.eye(3)
 # for i in SUPPORT_FEET:
 #     frictionCone = crocoddyl.CostModelResidual(
 #         STATE, crocoddyl.ResidualModelContactForce(STATE, i, pinocchio.Force.Zero(), 3,ACTUATION.nu))
 #     COSTS.addCost(ROBOT_MODEL.frames[i].name + "_frictionCone", frictionCone, 1)
+=======
+mu, R = 0.7, np.eye(3)
+SUPPORT_FEET = [
+    ROBOT_MODEL.getFrameId('LF_FOOT')]
+# for i in SUPPORT_FEET:
+#     frictionCone = crocoddyl.CostModelResidual(
+#         STATE, crocoddyl.ResidualModelContactForce(STATE, i, pinocchio.Force.Zero(), 3,ACTUATION.nu))
+#     COSTS.addCost(ROBOT_MODEL.frames[i].name + "_frictionCone", frictionCone, 1e1)
+>>>>>>> 5023d494a47d3cee1368b9378931111ce53645fb
 
 # for i in SUPPORT_FEET:
 #     cone = crocoddyl.FrictionCone(R, mu, 4, False)
