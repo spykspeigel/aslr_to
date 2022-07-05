@@ -8,7 +8,6 @@ SET(${PROJECT_NAME}_PYTHON_FILES
   integrated_action.py
   stiffness_cost.py
   actuation_vsa.py
-  actuation_condensed.py
   residual_acrobot.py
   )
 
