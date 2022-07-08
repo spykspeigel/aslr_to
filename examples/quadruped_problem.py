@@ -5,19 +5,16 @@ import aslr_to
 
 
 class SimpleQuadrupedalGaitProblem:
-    def __init__(self, rmodel, lfFoot, rfFoot, lhFoot, rhFoot,S=None):
+    def __init__(self, rmodel, lfFoot, rfFoot, lhFoot, rhFoot):
         self.rmodel = rmodel
         self.rdata = rmodel.createData()
         self.state = crocoddyl.StateSoftMultibody(self.rmodel)
         self.K = np.zeros([self.state.pinocchio.nv,self.state.pinocchio.nq])
         nu = self.state.nv_m
-        self.K[-nu:,-nu:]= 30*np.eye(nu)
-        self.B = .01*np.eye(self.state.nv_m)
+        self.K[-nu:,-nu:]= 10*np.eye(nu)
+        self.B = .001*np.eye(self.state.nv_m)
         self.actuation = aslr_to.ASRFreeFloatingActuation(self.state,self.K,self.B)
-        if S is not None:
-            self.S = S
-        else:
-            self.S = np.eye(12)
+
         # Getting the frame id for all the legs
         self.lfFootId = self.rmodel.getFrameId(lfFoot)
         self.rfFootId = self.rmodel.getFrameId(rfFoot)
@@ -129,7 +126,7 @@ class SimpleQuadrupedalGaitProblem:
 
         # Creating the action model for the KKT dynamics with simpletic Euler
         # integration scheme
-        dmodel = aslr_to.DifferentialContactASLRFwdDynModel(self.state, self.actuation, contactModel, costModel, self.K, self.B,self.S)
+        dmodel = aslr_to.DifferentialContactASLRFwdDynModel(self.state, self.actuation, contactModel, costModel, self.K, self.B)
         # print(dmodel.nu)
         model = crocoddyl.IntegratedActionModelEuler(dmodel, timeStep)
         return model

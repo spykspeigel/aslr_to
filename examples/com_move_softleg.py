@@ -8,24 +8,25 @@ import example_robot_data
 import pinocchio
 import aslr_to
 import inv_dyn
-from quadruped_problem import SimpleQuadrupedalGaitProblem
+from soft_leg_problem import SimpleMonopedProblem
+
 
 WITHDISPLAY = "display" in sys.argv or "CROCODDYL_DISPLAY" in os.environ
 WITHPLOT = "plot" in sys.argv or "CROCODDYL_PLOT" in os.environ
 
 # Loading the anymal model
-anymal = example_robot_data.load("anymal")
+anymal = example_robot_data.load("softleg")
 
 # Defining the initial state of the robot
-q0 = anymal.model.referenceConfigurations["standing"].copy()
+# q0 = anymal.model.referenceConfigurations["standing"].copy()
+q0 = anymal.q0
 v0 = pinocchio.utils.zero(anymal.model.nv)
-x0 = np.concatenate([q0, v0, np.zeros(24)])
+x0 = np.concatenate([q0, v0, np.zeros(4)])
 
 # Setting up the 3d walking problem
-lfFoot, rfFoot, lhFoot, rhFoot = "LF_FOOT", "RF_FOOT", "LH_FOOT", "RH_FOOT"
-S = np.zeros([12,12])
-S[:12,:12] = np.diag(np.ones(12))
-gait = SimpleQuadrupedalGaitProblem(anymal.model, lfFoot, rfFoot, lhFoot, rhFoot,S)
+rhFoot =  "FOOT"
+
+gait = SimpleMonopedProblem(anymal.model,  rhFoot)
 
 timeStep = 1e-3
 numKnots =500
@@ -35,14 +36,14 @@ solver = crocoddyl.SolverFDDP(gait.createCoMGoalProblem(x0, comGoTo, timeStep, n
 solver.problem.nthreads = 1
 cameraTF = [2.0, 2.68, 0.84, 0.2, 0.62, 0.72, 0.22]
 if WITHDISPLAY and WITHPLOT:
-    display = crocoddyl.GepettoDisplay(anymal, 4, 4, cameraTF, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])
+    display = crocoddyl.GepettoDisplay(anymal, 1, 1, cameraTF, frameNames=[rhFoot])
     solver.setCallbacks([
         crocoddyl.CallbackLogger(),
         crocoddyl.CallbackVerbose(),
         crocoddyl.CallbackDisplay(display),
     ])
 elif WITHDISPLAY:
-    display = crocoddyl.GepettoDisplay(anymal, 4, 4, cameraTF, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])
+    display = crocoddyl.GepettoDisplay(anymal, 1, 1, cameraTF, frameNames=[rhFoot])
     solver.setCallbacks([crocoddyl.CallbackVerbose(), crocoddyl.CallbackDisplay(display)])
 elif WITHPLOT:
     solver.setCallbacks([crocoddyl.CallbackLogger(), crocoddyl.CallbackVerbose()])
@@ -58,15 +59,15 @@ xs = [x0] * (solver.problem.T + 1)
     # xs[i] = rd[i].differential.tmp_xstatic
 # xs[-1] = rd[-1].differential.tmp_xstatic
 # xs[-1] = solver.problem.terminalData.differential.tmp_xstatic
-us = [np.zeros(12)] * solver.problem.T
+us = [np.zeros(2)] * solver.problem.T
 solver.solve(xs, us, 100)
 
 # print(rd[0].differential.multibody.pinocchio.oMf[anymal.model.getFrameId(
 #     lfFoot)].translation.T)
 print(solver.problem.terminalData.differential.multibody.pinocchio.oMf[anymal.model.getFrameId(
-    lfFoot)].translation.T)
+    rhFoot)].translation.T)
 if WITHDISPLAY:
-    display = inv_dyn.GepettoDisplayCustom(anymal, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])
+    display = inv_dyn.GepettoDisplayCustom(anymal, frameNames=[ rhFoot])
     while True:
         display.displayFromSolver(solver)
         time.sleep(2.0)

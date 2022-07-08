@@ -3,7 +3,7 @@ import pinocchio
 import crocoddyl
 
 class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstract):
-    def __init__(self, state, actuation, contacts, costs, K=None, B=None, S=None):
+    def __init__(self, state, actuation, contacts, costs, K=None, B=None):
         nu =  actuation.nu 
         crocoddyl.DifferentialActionModelAbstract.__init__(self, state, nu, costs.nr)
         self.actuation = actuation  
@@ -17,10 +17,10 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
             self.K[-nu:,-nu:]= 1*np.eye(nu)
         else:
             self.K = K
-        if S is None:
-            self.S = np.eye(state.nv_m)
-        else:
-            self.S = S
+        # if S is None:
+        #     self.S = np.eye(state.nv_m)
+        # else:
+        #     self.S = S
         #B is the motor intertia matrix
         if B is None:
             self.B = .001*np.eye(self.state.nv_m)   
@@ -62,7 +62,7 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
                         data.multibody.contacts.a0, JMinvJt_damping_)
         data.xout[:nv_l] = data.multibody.pinocchio.ddq
         data.xout[nv_l:] = np.dot(data.Binv, u + tau_couple[-self.state.nv_m:])
-        self.contacts.updateAcceleration(data.multibody.contacts, data.xout[:nv_l])
+        self.contacts.updateAcceleration(data.multibody.contacts, data.xout)
         self.contacts.updateForce(data.multibody.contacts, data.multibody.pinocchio.lambda_c)
         self.costs.calc(data.costs, x, u)
         data.cost = data.costs.cost
@@ -102,7 +102,7 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         data.Fx[nv_l:, 2*nv_l:-nv_m] = -np.dot(data.Binv,self.K[-self.actuation.nu:, -self.actuation.nu:])
         
         #Jacobian w.r.t control inputs (only motor side part will be non-zero)
-        data.Fu[nv_l:, :] = np.dot(data.Binv, np.dot(self.S,data.multibody.actuation.dtau_du[nv_l:, :]))
+        data.Fu[nv_l:, :] = np.dot(data.Binv, data.multibody.actuation.dtau_du[nv_l:, :])
 
         #computing the jacobian of contact forces (required with contact dependent costs)
         data.df_dx[:nc, :nv_l] = np.dot(f_partial_dtau, data.multibody.pinocchio.dtau_dq + self.K[:,-nv_l:])

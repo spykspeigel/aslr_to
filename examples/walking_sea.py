@@ -36,7 +36,6 @@ solver = crocoddyl.SolverFDDP(
     gait.createWalkingProblem(x0, walking_gait['stepLength'], walking_gait['stepHeight'], walking_gait['timeStep'],
                               walking_gait['stepKnots'], walking_gait['supportKnots']))
 
-
 solver.problem.nthreads = 1
 cameraTF = [2.0, 2.68, 0.84, 0.2, 0.62, 0.72, 0.22]
 

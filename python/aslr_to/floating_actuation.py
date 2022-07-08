@@ -4,7 +4,6 @@ import crocoddyl
 
 class ASRFreeFloatingActuation(crocoddyl.ActuationModelAbstract):
     def __init__(self, state, K, B):
-        assert (state.pinocchio.joints[1].shortname() == 'JointModelFreeFlyer')
         crocoddyl.ActuationModelAbstract.__init__(self, state, state.nv_m)
         self.nv_l = state.nv_l
         self.nq_l = state.nq_l
@@ -27,4 +26,3 @@ class ASRFreeFloatingActuation(crocoddyl.ActuationModelAbstract):
         data.dtau_dx[self.nv_l:,:self.nv_l] = -self.K[-self.nv_m:,-self.nv_l:]
         data.dtau_dx[self.nv_l: ,2*self.nv_l:-self.nu] = self.K[-self.nv_m:,-self.nu:]
         data.dtau_du[-self.nu:, :] =  np.eye(self.nu)
-
