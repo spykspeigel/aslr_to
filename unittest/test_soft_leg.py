@@ -8,25 +8,25 @@ import numpy as np
 import aslr_to
 from test_utils_ex import NUMDIFF_MODIFIER, assertNumDiff
 
-ROBOT_MODEL = example_robot_data.load("anymal").model
+ROBOT_MODEL = example_robot_data.load("softleg").model
 STATE = crocoddyl.StateSoftMultibody(ROBOT_MODEL)
 K = np.zeros([STATE.pinocchio.nv,STATE.pinocchio.nv])
-K[-12:,-12:]=1*np.eye(12)
+nu = STATE.nv_m
+K[-nu:,-nu:]= 30*np.eye(nu)
 B = .01*np.eye(STATE.nv_m)
-
 ACTUATION = aslr_to.ASRFreeFloatingActuation(STATE,K,B)
-
 
 nu = ACTUATION.nu
 
 CONTACTS = crocoddyl.ContactModelMultiple(STATE, nu)
 
 SUPPORT_FEET = [
-    ROBOT_MODEL.getFrameId('LF_FOOT')]
+    ROBOT_MODEL.getFrameId('softleg_1_contact_link')]
 
 for i in SUPPORT_FEET:
     xref = crocoddyl.FrameTranslation(i, np.array([0., 0., 0.]))
     supportContactModel = crocoddyl.ContactModel3D(STATE, xref, nu, np.array([0., 50.]))
+    print(ROBOT_MODEL.frames[i])
     CONTACTS.addContact(ROBOT_MODEL.frames[i].name + "_contact", supportContactModel)
 COSTS = crocoddyl.CostModelSum(STATE, nu)
 
@@ -94,7 +94,7 @@ MODEL_ND.calcDiff(DATA_ND,  x,  u)
 
 assertNumDiff( DATA.Fu, DATA_ND.Fu, NUMDIFF_MODIFIER *
                 MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
-assertNumDiff( DATA.Fx[6:18], DATA_ND.Fx[6:18,6:18], NUMDIFF_MODIFIER *
+assertNumDiff( DATA.Fx, DATA_ND.Fx, NUMDIFF_MODIFIER *
                 MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 
 assertNumDiff(DATA.Lu, DATA_ND.Lu, NUMDIFF_MODIFIER *

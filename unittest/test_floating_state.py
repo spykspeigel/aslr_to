@@ -37,7 +37,7 @@ assertNumDiff( state.diff(x1,xi_test), dx_test, NUMDIFF_MODIFIER *
 assertNumDiff( np.array(Jfirst.tolist()[0]), np.array(Jfirst_nd.tolist()[0]), NUMDIFF_MODIFIER *
                 1e-10)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 
-assertNumDiff( np.array(Jsecond.tolist()[0]), np.array(Jsecond_nd.tolist()[0]), NUMDIFF_MODIFIER *
+assertNumDiff( np.array(Jsecond.tolist()[0])[36:48,36:48], np.array(Jsecond_nd.tolist()[0])[36:48,36:48], NUMDIFF_MODIFIER *
                 1e-10)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 
 assertNumDiff( Jintfirst, np.array(Jintfirst_nd.tolist()[0]), NUMDIFF_MODIFIER *

@@ -41,14 +41,14 @@ cameraTF = [2.0, 2.68, 0.84, 0.2, 0.62, 0.72, 0.22]
 
 solver.th_stop = 1e-5
 if WITHDISPLAY and WITHPLOT:
-    display = crocoddyl.GepettoDisplay(anymal, 4, 4, cameraTF, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])
+    display = aslr_to.GepettoDisplay(anymal, 4, 4, cameraTF, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])
     solver.setCallbacks([
         crocoddyl.CallbackLogger(),
         crocoddyl.CallbackVerbose(),
         crocoddyl.CallbackDisplay(display),
     ])
 elif WITHDISPLAY:
-    display = crocoddyl.GepettoDisplay(anymal, 4, 4, cameraTF, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])
+    display = aslr_to.GepettoDisplay(anymal, 4, 4, cameraTF, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])
     solver.setCallbacks([crocoddyl.CallbackVerbose(), crocoddyl.CallbackDisplay(display)])
 elif WITHPLOT:
     solver.setCallbacks([crocoddyl.CallbackLogger(), crocoddyl.CallbackVerbose()])

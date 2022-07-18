@@ -24,12 +24,12 @@ v0 = pinocchio.utils.zero(anymal.model.nv)
 x0 = np.concatenate([q0, v0, np.zeros(4)])
 
 # Setting up the 3d walking problem
-rhFoot =  "FOOT"
+rhFoot =  "softleg_1_contact_link"
 
 gait = SimpleMonopedProblem(anymal.model,  rhFoot)
 
-timeStep = 1e-3
-numKnots =500
+timeStep = 1e-2
+numKnots =50
 comGoTo = 0.25
 
 solver = crocoddyl.SolverFDDP(gait.createCoMGoalProblem(x0, comGoTo, timeStep, numKnots))
@@ -64,14 +64,14 @@ solver.solve(xs, us, 100)
 
 # print(rd[0].differential.multibody.pinocchio.oMf[anymal.model.getFrameId(
 #     lfFoot)].translation.T)
-print(solver.problem.terminalData.differential.multibody.pinocchio.oMf[anymal.model.getFrameId(
-    rhFoot)].translation.T)
-if WITHDISPLAY:
-    display = inv_dyn.GepettoDisplayCustom(anymal, frameNames=[ rhFoot])
-    while True:
-        display.displayFromSolver(solver)
-        time.sleep(2.0)
+# print(solver.problem.terminalData.differential.multibody.pinocchio.oMf[anymal.model.getFrameId(
+#     rhFoot)].translation.T)
+# if WITHDISPLAY:
+#     display = inv_dyn.GepettoDisplayCustom(anymal, frameNames=[ rhFoot])
+#     while True:
+#         display.displayFromSolver(solver)
+#         time.sleep(2.0)
 
-if WITHPLOT:
-    log = solver.getCallbacks()[0]
-    crocoddyl.plotOCSolution(log.xs ,log.us,figIndex=1, show=True)
+# if WITHPLOT:
+#     log = solver.getCallbacks()[0]
+#     crocoddyl.plotOCSolution(log.xs ,log.us,figIndex=1, show=True)

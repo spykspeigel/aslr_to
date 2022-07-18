@@ -23,9 +23,7 @@ x0 = np.concatenate([q0, v0, np.zeros(24)])
 
 # Setting up the 3d walking problem
 lfFoot, rfFoot, lhFoot, rhFoot = "LF_FOOT", "RF_FOOT", "LH_FOOT", "RH_FOOT"
-S = np.zeros([12,12])
-S[:12,:12] = np.diag(np.ones(12))
-gait = SimpleQuadrupedalGaitProblem(anymal.model, lfFoot, rfFoot, lhFoot, rhFoot,S)
+gait = SimpleQuadrupedalGaitProblem(anymal.model, lfFoot, rfFoot, lhFoot, rhFoot)
 
 timeStep = 1e-3
 numKnots =500

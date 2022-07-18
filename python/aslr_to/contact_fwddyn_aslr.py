@@ -65,6 +65,7 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         self.contacts.updateAcceleration(data.multibody.contacts, data.xout)
         self.contacts.updateForce(data.multibody.contacts, data.multibody.pinocchio.lambda_c)
         self.costs.calc(data.costs, x, u)
+
         data.cost = data.costs.cost
 
     def calcDiff(self, data, x, u):
@@ -84,7 +85,7 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         data.Kinv = pinocchio.getKKTContactDynamicMatrixInverse(self.state.pinocchio, data.multibody.pinocchio, data.multibody.contacts.Jc[:nc,:nv_l])
         self.actuation.calcDiff(data.multibody.actuation, x, u)
 
-        self.contacts.calcDiff(data.multibody.contacts, x_l)
+        self.contacts.calcDiff(data.multibody.contacts, x)
         #Extracting the TopLeft corner block diagonal matrix
         a_partial_dtau = data.Kinv[:nv_l,:nv_l]
         a_partial_da = data.Kinv[:nv_l,:nc]
@@ -100,10 +101,9 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         #Jacobian for the motor side coordinates  i.e. \dot\dot{\theta}
         data.Fx[nv_l:, :nv_l] = np.dot(data.Binv,self.K[-self.actuation.nu:,-nv_l:])
         data.Fx[nv_l:, 2*nv_l:-nv_m] = -np.dot(data.Binv,self.K[-self.actuation.nu:, -self.actuation.nu:])
-        
+        print(data.multibody.actuation.dtau_du)
         #Jacobian w.r.t control inputs (only motor side part will be non-zero)
-        data.Fu[nv_l:, :] = np.dot(data.Binv, data.multibody.actuation.dtau_du[nv_l:, :])
-
+        data.Fu[nv_l:, :] = data.Binv
         #computing the jacobian of contact forces (required with contact dependent costs)
         data.df_dx[:nc, :nv_l] = np.dot(f_partial_dtau, data.multibody.pinocchio.dtau_dq + self.K[:,-nv_l:])
         data.df_dx[:nc, nv_l:2*nv_l] = np.dot(f_partial_dtau, data.multibody.pinocchio.dtau_dv)
@@ -112,7 +112,6 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
 
         self.contacts.updateAccelerationDiff(data.multibody.contacts, data.Fx)
         self.contacts.updateForceDiff(data.multibody.contacts, data.df_dx, data.df_du)
-
         self.costs.calcDiff(data.costs, x, u)
 
     def quasiStatic(self, data,x,maxiter,tol):

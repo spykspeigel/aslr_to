@@ -13,7 +13,7 @@ class SimpleQuadrupedalGaitProblem:
         nu = self.state.nv_m
         self.K[-nu:,-nu:]= 10*np.eye(nu)
         self.B = .001*np.eye(self.state.nv_m)
-        self.actuation = aslr_to.ASRFreeFloatingActuation(self.state,self.K,self.B)
+        self.actuation = aslr_to.ASRFreeFloatingActuation(self.state,12)
 
         # Getting the frame id for all the legs
         self.lfFootId = self.rmodel.getFrameId(lfFoot)
@@ -103,7 +103,7 @@ class SimpleQuadrupedalGaitProblem:
                 frameTranslationResidual = crocoddyl.ResidualModelFrameTranslation(self.state, i[0], i[1].translation,
                                                                                    nu)
                 footTrack = crocoddyl.CostModelResidual(self.state, frameTranslationResidual)
-                costModel.addCost(self.rmodel.frames[i[0]].name + "_footTrack", footTrack, 1e5)
+                costModel.addCost(self.rmodel.frames[i[0]].name + "_footTrack", footTrack, 1e7)
 
         stateWeights = np.array([0.] * 3 + [500.] * 3 + [0.01] * (self.rmodel.nv - 6) + [10.] * 6 + [1.] *
                                 (self.rmodel.nv - 6) + [1e0]*self.state.nv_m+ [1e-1]*self.state.nv_m)
@@ -178,7 +178,7 @@ class SimpleQuadrupedalGaitProblem:
         lfStep = self.createFootstepModels(comRef, [lfFootPos0], stepLength, stepHeight, timeStep, stepKnots,
                                            [self.rfFootId, self.lhFootId, self.rhFootId], [self.lfFootId])
         loco3dModel += doubleSupport + rhStep + rfStep
-        loco3dModel += doubleSupport + lhStep #+ lfStep
+        # loco3dModel += doubleSupport + lhStep + lfStep
 
         problem = crocoddyl.ShootingProblem(x0, loco3dModel, loco3dModel[-1])
         return problem
@@ -226,7 +226,7 @@ class SimpleQuadrupedalGaitProblem:
             ]
 
         # Action model for the foot switch
-        footSwitchModel = self.createFootSwitchModel(supportFootIds, swingFootTask,False)
+        footSwitchModel = self.createFootSwitchModel(supportFootIds, swingFootTask,True)
 
         # Updating the current foot position for next step
         comPos0 += [stepLength * comPercentage, 0., 0.]
@@ -409,7 +409,7 @@ class SimpleQuadrupedalGaitProblem:
 
         # Creating the action model for the KKT dynamics with simpletic Euler
         # integration scheme
-        dmodel = aslr_to.DifferentialContactASLRFwdDynModel(self.state, self.actuation, contactModel, costModel, self.K, self.B,self.S)
+        dmodel = aslr_to.DifferentialContactASLRFwdDynModel(self.state, self.actuation, contactModel, costModel, self.K, self.B)
         model = crocoddyl.IntegratedActionModelEuler(dmodel, 0.)
         return model
 

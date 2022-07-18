@@ -16,7 +16,7 @@ class SimpleMonopedProblem:
         self.actuation = aslr_to.ASRFreeFloatingActuation(self.state,self.K,self.B)
 
         # Getting the frame id for all the legs
-        self.rhFootId = self.rmodel.getFrameId(rhFoot)
+        self.rhFootId = self.rmodel.getFrameId('softleg_1_contact_link')
         # Defining default state
         # q0 = self.rmodel.referenceConfigurations["standing"]
         self.q0 =np.array([0,0,0])
@@ -64,7 +64,6 @@ class SimpleMonopedProblem:
         # Defining the shooting problem
         problem = crocoddyl.ShootingProblem(x0, comModels, comModels[-1])
         return problem
-
 
     def createJumpingProblem(self, x0, jumpHeight, jumpLength, timeStep, groundKnots, flyingKnots):
         q0 = x0[:self.rmodel.nq]

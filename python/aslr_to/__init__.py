@@ -3,8 +3,8 @@ from .contact_fwddyn_aslr import (DifferentialContactASLRFwdDynModel, Differenti
 from .contact_fwddyn_new import (DifferentialContactASLRFwdDynModelNew, DifferentialContactASLRFwdDynDataNew)
 from .residual_tau_couple import (ResidualModelTauCouple,ResidualDataTauCouple)
 from .residual_frame_placement import (ResidualModelFramePlacementASR,ResidualDataFramePlacementASR)
-from .floating_actuation import ASRFreeFloatingActuation
-from .floating_actuation_new import FreeFloatingActuationNew
+from .floating_actuation_new import ASRFreeFloatingActuation
+# from .floating_actuation_new import FreeFloatingActuationNew
 from .contact_fwddyn_rigid import (DifferentialContactFwdDynModelRigid,DifferentialContactFwdDynDataRigid)
 from .floating_actuation_condensed import FreeFloatingActuationCondensed
 from .residual_floating_soft_model import (FloatingSoftDynamicsResidualModel, FloatingSoftDynamicsResidualData)
