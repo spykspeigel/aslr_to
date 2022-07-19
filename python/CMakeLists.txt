@@ -8,7 +8,7 @@ SET(${PROJECT_NAME}_PYTHON_FILES
   statemultiasr.py
   contact_fwddyn_rigid.py
   floating_actuation_condensed.py
-  floating_actuation_new.py
+  floating_actuation_old.py
   residual_floating_soft_model.py
   residual_floating_vsa_model.py
   softmodel_data.py
