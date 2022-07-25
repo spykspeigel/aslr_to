@@ -90,4 +90,4 @@ print(np.sum(u_squared(log1)))
 
 if WITHPLOT:
     log = solver.getCallbacks()[0]
-    aslr_to.plotOCSolution(log.xs ,log.us,figIndex=1, show=True)
+    aslr_to.plotSEAOCSolution(log.xs ,log.us,figIndex=1, show=True)

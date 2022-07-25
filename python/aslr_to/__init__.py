@@ -4,6 +4,7 @@ from .contact_fwddyn_new import (DifferentialContactASLRFwdDynModelNew, Differen
 from .residual_tau_couple import (ResidualModelTauCouple,ResidualDataTauCouple)
 from .residual_frame_placement import (ResidualModelFramePlacementASR,ResidualDataFramePlacementASR)
 from .floating_actuation import ASRFreeFloatingActuation
+from .actuation_softleg import SoftLegActuation
 # from .floating_actuation_old import ASRFreeFloatingActuation
 from .contact_fwddyn_rigid import (DifferentialContactFwdDynModelRigid,DifferentialContactFwdDynDataRigid)
 from .floating_actuation_condensed import FreeFloatingActuationCondensed

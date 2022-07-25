@@ -1,5 +1,4 @@
 import sys
-from telnetlib import DM
 import unittest
 
 import crocoddyl

@@ -85,21 +85,20 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         data.Kinv = pinocchio.getKKTContactDynamicMatrixInverse(self.state.pinocchio, data.multibody.pinocchio, data.multibody.contacts.Jc[:nc,:nv_l])
         self.actuation.calcDiff(data.multibody.actuation, x, u)
 
-        self.contacts.calcDiff(data.multibody.contacts, x_l)
+        self.contacts.calcDiff(data.multibody.contacts, x)
         #Extracting the TopLeft corner block diagonal matrix
         a_partial_dtau = data.Kinv[:nv_l,:nv_l]
         f_partial_dtau = data.Kinv[nv_l:,:nv_l]
         if nc!=0:
             a_partial_da = data.Kinv[:nv_l,-nc:]
             f_partial_da = data.Kinv[nv_l:,-nc:]
-
         #Jacobian for the link side coordinates  i.e. \dot\dot{q}
         data.Fx[:nv_l,:nv_l] = -np.dot(a_partial_dtau, data.multibody.pinocchio.dtau_dq + self.K[:,-nv_l:])
         data.Fx[:nv_l,nv_l:2*nv_l] = -np.dot(a_partial_dtau, data.multibody.pinocchio.dtau_dv)
         data.Fx[:nv_l,2*nv_l:-nv_m] = np.dot(a_partial_dtau,self.K[:,-self.state.nv_m:])
+        
         if nc!=0:
             data.Fx[:nv_l,:2*nv_l] -=   np.dot(a_partial_da, data.multibody.contacts.da0_dx[:nc,:2*nv_l])
-
         #Jacobian for the motor side coordinates  i.e. \dot\dot{\theta}
         data.Fx[nv_l:, :nv_l] = np.dot(data.Binv,self.K[-self.actuation.nu:,-nv_l:])
         data.Fx[nv_l:, 2*nv_l:-nv_m] = -np.dot(data.Binv,self.K[-self.actuation.nu:, -self.actuation.nu:])

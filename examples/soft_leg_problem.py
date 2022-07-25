@@ -13,7 +13,7 @@ class SimpleMonopedProblem:
         nu = self.state.nv_m
         self.K[-nu:,-nu:]= 30*np.eye(nu)
         self.B = .01*np.eye(self.state.nv_m)
-        self.actuation = aslr_to.ASRFreeFloatingActuation(self.state,self.K,self.B)
+        self.actuation = aslr_to.SoftLegActuation(self.state)
 
         # Getting the frame id for all the legs
         self.rhFootId = self.rmodel.getFrameId('softleg_1_contact_link')
