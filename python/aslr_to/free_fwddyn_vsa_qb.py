@@ -1,3 +1,14 @@
+###################################3
+####
+####Deprecated code
+####
+#####################################
+
+
+
+
+
+
 import numpy as np
 import pinocchio
 import crocoddyl
