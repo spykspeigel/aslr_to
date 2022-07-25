@@ -5,7 +5,7 @@ from .residual_frame_placement import (ResidualModelFramePlacementASR,ResidualDa
 from .integrated_action import (IntegratedActionModelEulerASR, IntegratedActionDataEulerASR)
 from .stiffness_cost import (CostModelStiffness, CostDataStiffness)
 from .actuation_vsa import VSAASRActuation
-from .actuation_aslr import ASRActuation
+from .actuation_asr import ASRActuation
 from .residual_acrobot import (ResidualModelDoublePendulum,ResidualDataDoublePendulum)
 import numpy as np
 import crocoddyl

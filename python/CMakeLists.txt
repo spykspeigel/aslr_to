@@ -3,7 +3,7 @@ SET(${PROJECT_NAME}_PYTHON_FILES
   free_fwddyn_asr.py
   free_fwddyn_vsa.py
   statemultibody_aslr.py
-  actuation_aslr.py
+  actuation_asr.py
   residual_frame_placement.py
   integrated_action.py
   stiffness_cost.py
