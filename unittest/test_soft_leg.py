@@ -25,7 +25,7 @@ SUPPORT_FEET = [
 
 for i in SUPPORT_FEET:
     xref = crocoddyl.FrameTranslation(i, np.array([0., 0., 0.]))
-    supportContactModel = crocoddyl.ContactModel3D(STATE, xref, nu, np.array([0., 50.]))
+    supportContactModel = crocoddyl.ContactModel2D(STATE, xref, nu, np.array([0., 50.]))
     CONTACTS.addContact(ROBOT_MODEL.frames[i].name + "_contact", supportContactModel)
 COSTS = crocoddyl.CostModelSum(STATE, nu)
 
@@ -77,15 +77,15 @@ COSTS = crocoddyl.CostModelSum(STATE, nu)
 # comTrack = crocoddyl.CostModelResidual(STATE, comResidual)
 # COSTS.addCost("comTrack", comTrack, 1e5)
 
-MODEL = aslr_to.DifferentialContactASLRFwdDynModel(STATE, ACTUATION, CONTACTS, COSTS,K,B)
+dMODEL = aslr_to.DifferentialContactASLRFwdDynModel(STATE, ACTUATION, CONTACTS, COSTS,K,B)
 
-# MODEL = crocoddyl.IntegratedActionModelEuler(dMODEL, 1e-2)
+MODEL = crocoddyl.IntegratedActionModelEuler(dMODEL, 1e-2)
 
 x = MODEL.state.rand()
 u = np.random.rand(MODEL.nu)
 DATA = MODEL.createData()
 
-MODEL_ND = crocoddyl.DifferentialActionModelNumDiff( MODEL)
+MODEL_ND = crocoddyl.ActionModelNumDiff( MODEL)
 MODEL_ND.disturbance *= 10
 DATA_ND = MODEL_ND.createData()
 MODEL.calc( DATA,  x,  u)
@@ -95,7 +95,7 @@ MODEL_ND.calcDiff(DATA_ND,  x,  u)
 
 assertNumDiff( DATA.Fu, DATA_ND.Fu, NUMDIFF_MODIFIER *
                 MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
-assertNumDiff( DATA.Fx[:3,:3], DATA_ND.Fx[:3,:3], NUMDIFF_MODIFIER *
+assertNumDiff( DATA.Fx, DATA_ND.Fx, NUMDIFF_MODIFIER *
                 MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 
 assertNumDiff(DATA.Lu, DATA_ND.Lu, NUMDIFF_MODIFIER *

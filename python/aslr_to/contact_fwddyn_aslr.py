@@ -56,8 +56,10 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         self.contacts.calc(data.multibody.contacts, x)
         data.Binv = np.linalg.inv(self.B)
         tau = data.multibody.actuation.tau
-
+        print(np.linalg.cond(data.multibody.pinocchio.M))
         JMinvJt_damping_=0.
+        # print("--")
+        # print(data.multibody.contacts.Jc[:nc,:nv_l])
         pinocchio.forwardDynamics(self.state.pinocchio, data.multibody.pinocchio, -tau_couple, data.multibody.contacts.Jc[:nc,:nv_l],
                         data.multibody.contacts.a0, JMinvJt_damping_)
         data.xout[:nv_l] = data.multibody.pinocchio.ddq
@@ -66,6 +68,17 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         self.contacts.updateForce(data.multibody.contacts, data.multibody.pinocchio.lambda_c)
         self.costs.calc(data.costs, x, u)
 
+        data.Kinv = pinocchio.getKKTContactDynamicMatrixInverse(self.state.pinocchio, data.multibody.pinocchio, data.multibody.contacts.Jc[:nc,:nv_l])
+
+        #Extracting the TopLeft corner block diagonal matrix
+
+        f_partial_dtau = data.Kinv[nv_l:,:nv_l]
+        f_partial_da = data.Kinv[nv_l:,-nc:]
+        # print("contact")
+        # print(np.dot(f_partial_da,data.multibody.contacts.a0)+np.dot(f_partial_dtau,tau_couple))
+        # print("___")
+        # print(data.multibody.pinocchio.lambda_c)
+        # print("::::::+++++++++LLLLLL::::::::")
         data.cost = data.costs.cost
 
     def calcDiff(self, data, x, u):

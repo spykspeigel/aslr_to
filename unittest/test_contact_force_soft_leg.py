@@ -31,7 +31,7 @@ nu = ACTUATION.nu
 CONTACTS = crocoddyl.ContactModelMultiple(STATE, nu)
 for i in SUPPORT_FEET:
     xref = crocoddyl.FrameTranslation(i, np.array([0., 0., 0.]))
-    Contact = crocoddyl.ContactModel3D(STATE, xref, nu, np.array([0., 50.]))
+    Contact = crocoddyl.ContactModel2D(STATE, xref, nu, np.array([0., 50.]))
     CONTACTS.addContact(ROBOT_MODEL.frames[i].name + "_contact", Contact)
 COSTS = crocoddyl.CostModelSum(STATE, nu)
 # for i in SUPPORT_FEET:
@@ -64,7 +64,7 @@ Jc = DATA.multibody.contacts.contacts.todict()['softleg_1_contact_link_contact']
 #computing numerical diff da0_dx
 disturbance =1e-8
 dx = np.zeros(STATE.ndx)
-df_dx_nd = np.zeros([3,STATE.ndx])
+df_dx_nd = np.zeros([2,STATE.ndx])
 dres_dx_nd = np.zeros([3,STATE.ndx])
 Lx_nd = np.zeros([STATE.ndx,])
 f = DATA.multibody.contacts.contacts.todict()['softleg_1_contact_link_contact'].f.linear
@@ -89,8 +89,8 @@ for i in range(STATE.ndx):
     res_new = DATA_ND.costs.costs.todict()['softleg_1_contact_link_frictionCone'].residual.r
     Jc_new = DATA_ND.multibody.contacts.contacts.todict()['softleg_1_contact_link_contact'].Jc
     print("new Jc is being printed")
-    # print((f_new-f)/disturbance)
-    print(np.linalg.norm(Jc-Jc_new)/disturbance)
+    print((f_new-f)/disturbance)
+    # print(np.linalg.norm(Jc-Jc_new)/disturbance)
     df_dx_nd[:,i]=(f_new-f)/disturbance
     # dres_dx_nd[:,i] = (res_new-res)/disturbance
     Lx_nd[i] = (DATA_ND.cost-DATA.cost)/disturbance
@@ -106,7 +106,7 @@ for i in range(STATE.ndx):
 # print(np.linalg.norm(Lx-np.dot(dres_dx_nd.T,res)))
 print(np.linalg.norm(Lx-Lx_nd))
 # # print(temp_lx)
-print(np.linalg.norm(df_dx_nd[:,:3]-df_dx[:,:3]))
+print(np.linalg.norm(df_dx_nd[0,:]-df_dx[0,:]))
 # # print(np.linalg.norm(temp_lx-Lx))
 # # print(np.linalg.norm(dres_dx_nd-Rx))
 
