@@ -16,6 +16,8 @@ SET(${PROJECT_NAME}_PYTHON_FILES
   vsa_dynamics_residual.py
   residual_acrobot.py
   actuation_vsa_qb.py
+  actuation_fishing.py
+  free_fwddyn_fishing_2.py
   )
 
 FOREACH(python ${${PROJECT_NAME}_PYTHON_FILES})
