@@ -14,7 +14,7 @@ K = np.zeros([STATE.pinocchio.nv,STATE.pinocchio.nv])
 K[-12:,-12:]=1*np.eye(12)
 B = .01*np.eye(STATE.nv_m)
 
-ACTUATION = aslr_to.ASRFreeFloatingActuation(STATE,K,B)
+ACTUATION = aslr_to.ASRFreeFloatingActuation(STATE)
 
 
 nu = ACTUATION.nu
@@ -94,7 +94,7 @@ MODEL_ND.calcDiff(DATA_ND,  x,  u)
 
 assertNumDiff( DATA.Fu, DATA_ND.Fu, NUMDIFF_MODIFIER *
                 MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
-assertNumDiff( DATA.Fx[6:18], DATA_ND.Fx[6:18,6:18], NUMDIFF_MODIFIER *
+assertNumDiff( DATA.Fx, DATA_ND.Fx, NUMDIFF_MODIFIER *
                 MODEL_ND.disturbance)  # threshold was 2.7e-2, is now 2.11e-4 (see assertNumDiff.__doc__)
 
 assertNumDiff(DATA.Lu, DATA_ND.Lu, NUMDIFF_MODIFIER *
