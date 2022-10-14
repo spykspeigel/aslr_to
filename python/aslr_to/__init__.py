@@ -296,5 +296,6 @@ class ActuationDataDoublePendulum(crocoddyl.ActuationDataAbstract):
             self.S[-1,-1] = 1
         else:
             self.S[int(model.nv/2),0] = 1
+            self.S[int(model.nv/2)+2,2] = 1
             # self.S[int(model.nv/2):8,:1] = np.eye(1)
-            # print(self.S)
+            print(self.S)
