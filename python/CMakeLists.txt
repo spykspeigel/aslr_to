@@ -3,6 +3,7 @@ SET(${PROJECT_NAME}_PYTHON_FILES
   free_fwddyn_asr.py
   free_fwddyn_vsa.py
   free_fwddyn_vsa_qb.py
+  numdiff_dam_asr.py
   contact_fwddyn.py
   statemultibody_aslr.py
   actuation_aslr.py

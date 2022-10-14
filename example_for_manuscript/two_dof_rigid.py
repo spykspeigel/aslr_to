@@ -36,16 +36,20 @@ xRegCost = crocoddyl.CostModelResidual(state, xResidual)
 
 # Then let's added the running and terminal cost functions
 runningCostModel.addCost("gripperPose", goalTrackingCost, 1e-1)
-runningCostModel.addCost("xReg", xRegCost, 1e-2)
-runningCostModel.addCost("uReg", uRegCost, 1e-1)
+# runningCostModel.addCost("xReg", xRegCost, 1e-2)
+# runningCostModel.addCost("uReg", uRegCost, 1e-1)
 terminalCostModel.addCost("gripperPose", goalTrackingCost, 4e4)
-
+runningModel= crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, runningCostModel)
+model_nd_r = crocoddyl.DifferentialActionModelNumDiff(runningModel)
+terminalModel = crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, terminalCostModel)
+model_nd_t = crocoddyl.DifferentialActionModelNumDiff(terminalModel)
 dt = 1e-2
 runningModel = crocoddyl.IntegratedActionModelEuler(
-    crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, runningCostModel), dt)
+    # runningModel, dt)
+    model_nd_r,dt)
 terminalModel = crocoddyl.IntegratedActionModelEuler(
-    crocoddyl.DifferentialActionModelFreeFwdDynamics(state, actuation, terminalCostModel), 0)
-
+    # terminalModel, 0)
+    model_nd_t,0)
 T = 200
 
 q0 = np.array([.0,0])
@@ -65,27 +69,26 @@ solver.setCallbacks([crocoddyl.CallbackLogger(), crocoddyl.CallbackVerbose() ])
 
 xs = [x0] * (solver.problem.T + 1)
 us = solver.problem.quasiStatic([x0] * solver.problem.T)
-solver.th_stop = 1e-7
+solver.th_stop = 1e-5
 # Solving it with the DDP algorithm
-solver.solve()
+solver.solve(xs,us,10000)
 
+# print('Finally reached = ', solver.problem.runningDatas.tolist()[0].differential.multibody.pinocchio.oMf[robot_model.getFrameId(
+#     "EE")].translation.T)
 
-print('Finally reached = ', solver.problem.runningDatas.tolist()[0].differential.multibody.pinocchio.oMf[robot_model.getFrameId(
-    "EE")].translation.T)
+# print('Finally reached = ', solver.problem.terminalData.differential.multibody.pinocchio.oMf[robot_model.getFrameId(
+#     "EE")].translation.T)
 
-print('Finally reached = ', solver.problem.terminalData.differential.multibody.pinocchio.oMf[robot_model.getFrameId(
-    "EE")].translation.T)
-
-log = solver.getCallbacks()[0]
-print( np.sum(aslr_to.u_squared(log)))
-# print("printing usquared")
-# print(u1)
-# print("______")
-# print(u2)
-# Plotting the solution and the DDP convergence
-if WITHPLOT:
-    log = solver.getCallbacks()[0]
-    aslr_to.plotOCSolution(log.xs, log.us,figIndex=1, show=True)
+# log = solver.getCallbacks()[0]
+# print( np.sum(aslr_to.u_squared(log)))
+# # print("printing usquared")
+# # print(u1)
+# # print("______")
+# # print(u2)
+# # Plotting the solution and the DDP convergence
+# if WITHPLOT:
+#     log = solver.getCallbacks()[0]
+#     aslr_to.plotOCSolution(log.xs, log.us,figIndex=1, show=True)
     #crocoddyl.plotConvergence(log.costs, log.u_regs, log.x_regs, log.grads, log.stops, log.steps, figIndex=2)
 
 # Visualizing the solution in gepetto-viewer
@@ -94,41 +97,41 @@ if WITHDISPLAY:
         display.displayFromSolver(solver)
         time.sleep(2.0)
 
-u1=np.array([])
-u2=np.array([])
+# u1=np.array([])
+# u2=np.array([])
 
-q1=np.array([])
-q2=np.array([])
-v1=np.array([])
-v2=np.array([])
+# q1=np.array([])
+# q2=np.array([])
+# v1=np.array([])
+# v2=np.array([])
 
-for i in range(len(log.us)):
-    u1 = np.append(u1,log.us[i][0])
-    u2 = np.append(u2,log.us[i][1])
+# for i in range(len(log.us)):
+#     u1 = np.append(u1,log.us[i][0])
+#     u2 = np.append(u2,log.us[i][1])
 
-for i in range(len(log.xs)):
-    q1 = np.append(q1,log.xs[i][0])
-    q2 = np.append(q2,log.xs[i][1])
+# for i in range(len(log.xs)):
+#     q1 = np.append(q1,log.xs[i][0])
+#     q2 = np.append(q2,log.xs[i][1])
 
-    v1 = np.append(v1,log.xs[i][2])
-    v2 = np.append(v2,log.xs[i][3])
-
-
-t=np.arange(0,T*dt,dt)
-
-savemat("optimised_trajectory.mat", {"q1": q1,"q2":q2,"v1": v1,"v2":v2,"t":t})
-savemat("controls.mat", {"u1": u1,"u2":u2,"t":t})
-
-K=solver.K.tolist()
-K_temp = []
-for i in range(len(K)):
-    K_temp.append(np.linalg.norm(K[i]))
+#     v1 = np.append(v1,log.xs[i][2])
+#     v2 = np.append(v2,log.xs[i][3])
 
 
-K_temp = []
-for i in range(len(K)):
-    K_temp.append(np.linalg.norm(K[i]))
+# t=np.arange(0,T*dt,dt)
 
-plt.plot(K_temp)
-plt.show()
-savemat("fb.mat", {"K":K,"t":t})
+# savemat("optimised_trajectory.mat", {"q1": q1,"q2":q2,"v1": v1,"v2":v2,"t":t})
+# savemat("controls.mat", {"u1": u1,"u2":u2,"t":t})
+
+# K=solver.K.tolist()
+# K_temp = []
+# for i in range(len(K)):
+#     K_temp.append(np.linalg.norm(K[i]))
+
+
+# K_temp = []
+# for i in range(len(K)):
+#     K_temp.append(np.linalg.norm(K[i]))
+
+# plt.plot(K_temp)
+# plt.show()
+# savemat("fb.mat", {"K":K,"t":t})

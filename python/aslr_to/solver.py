@@ -141,16 +141,16 @@ class DDPASLR(crocoddyl.SolverAbstract):
                 self.Vx[t][:] -= np.dot(self.K[t].T, self.Qu[t])
                 self.Vx[t][:] -= np.dot(self.Qxu[t], self.k[t])
                 self.Vx[t][:] += np.dot(self.K[t].T, np.dot(self.Quu[t], self.k[t]))
-                self.Vxx[t][:] -=   2*np.dot(self.Qxu[t], self.K[t]) 
-                # self.Vxx[t][:] -= np.dot( self.K[t].T,self.Qxu[t].T)
+                # self.Vxx[t][:] -=   2*np.dot(self.Qxu[t], self.K[t]) 
+                self.Vxx[t][:] -= np.dot( self.K[t].T,self.Qxu[t].T)
                 self.Vxx[t][:] += np.dot(self.K[t].T, np.dot(self.Quu[t], self.K[t]))
             self.Vxx[t][:, :] = 0.5 * (self.Vxx[t][:, :] + self.Vxx[t][:, :].T)  # ensure symmetric
             if self.x_reg != 0:
                 self.Vxx[t][range(model.state.ndx), range(model.state.ndx)] += self.x_reg
 
             # Compute and store the Vx gradient at end of the interval (rollout state)
-            # if not self.isFeasible:
-            #     self.Vx[t] += np.dot(self.Vxx[t], self.fs[t])
+            if not self.isFeasible:
+                self.Vx[t] += np.dot(self.Vxx[t], self.fs[t])
 
             raiseIfNan(self.Vxx[t], ArithmeticError('backward error'))
             raiseIfNan(self.Vx[t], ArithmeticError('backward error'))
@@ -182,6 +182,8 @@ class DDPASLR(crocoddyl.SolverAbstract):
             if self.Quu[t].shape[0] > 0:
                 Lb = scl.cho_factor(self.Quu[t])
                 self.K[t][:, :] = scl.cho_solve(Lb, self.Qxu[t].T)
+                self.K[t][:,:4] *=0
+                # print(self.K[t])
                 # if np.linalg.norm(self.K[t])>1:
                 #     # print("klesss")
                 #     self.Qxu[t][:,:] = self.Qxu[t]/np.linalg.norm(self.K[t])

@@ -3,6 +3,7 @@ from .contact_fwddyn import (DifferentialContactASLRFwdDynModel, DifferentialCon
 from .free_fwddyn_asr import (DifferentialFreeASRFwdDynamicsModel,DifferentialFreeASRFwdDynamicsData)
 from .free_fwddyn_vsa import (DifferentialFreeFwdDynamicsModelVSA, DifferentialFreeFwdDynamicsDataVSA)
 from .free_fwddyn_fishing_2 import (DAM2, DAD2)
+from .numdiff_dam_asr import (NumDiffASRFwdDynamicsModel,NumDiffASRFwdDynamicsData)
 from .free_fwddyn_vsa_qb import (DifferentialFreeFwdDynamicsModelQb, DifferentialFreeFwdDynamicsDataQb)
 from .residual_frame_placement import (ResidualModelFramePlacementASR,ResidualDataFramePlacementASR)
 from .integrated_action import (IntegratedActionModelEulerASR, IntegratedActionDataEulerASR)
