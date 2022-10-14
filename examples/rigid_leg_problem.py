@@ -4,16 +4,16 @@ import numpy as np
 import aslr_to
 
 import copy 
-class SimpleMonopedProblem:
+class RigidMonopedProblem:
     def __init__(self, rmodel, rhFoot):
         self.rmodel = rmodel
         self.rdata = rmodel.createData()
-        self.state = crocoddyl.StateSoftMultibody(self.rmodel)
+        self.state = crocoddyl.StateMultibody(self.rmodel)
         self.K = np.zeros([self.state.pinocchio.nv,self.state.pinocchio.nq])
-        nu = self.state.nv_m
-        self.K[-nu:,-nu:]= 50*np.eye(nu)
-        self.B = .001*np.eye(self.state.nv_m)
-        self.actuation = aslr_to.SoftLegActuation(self.state)
+        nu = self.state.nv
+        self.K[-nu:,-nu:]= 100*np.eye(nu)
+        self.B = .001*np.eye(self.state.nv)
+        self.actuation = aslr_to.RigidLegActuation(self.state)
 
         # Getting the frame id for all the legs
         self.FootId = self.rmodel.getFrameId('softleg_1_contact_link')
@@ -27,16 +27,16 @@ class SimpleMonopedProblem:
         # self.q0[2] = .1 * angle
 
         # OPTION 2 Initial configuration distributing the joints in a semicircle with foot in O (scalable if n_joints > 2)
-        self.q0[0] = .26
+        self.q0[0] = .36
         self.q0[1] = -np.pi/3
-        self.q0[2] = -np.pi/2
+        self.q0[2] = np.pi/3
 
         # OPTION 3 Solo, (the convention used has negative displacements)
         # q0[0] = 0.16 / np.sin(np.pi/(2 * 2))
         # q0[1] = np.pi/4
         # q0[2] = -np.pi/2
 
-        self.rmodel.defaultState = np.concatenate([self.q0, np.zeros(self.rmodel.nv), np.zeros(4)])
+        self.rmodel.defaultState = np.concatenate([self.q0, np.zeros(self.rmodel.nv)])
         print(self.rmodel.defaultState.shape)
         self.firstStep = True
         # Defining the friction coefficient and normal
@@ -60,13 +60,20 @@ class SimpleMonopedProblem:
                 [ self.FootId],
             ) for k in range(groundKnots)
         ]
-        
+
         flyingUpPhase = [
+            self.createSwingFootModel(
+                timeStep, [])
+                
+                for k in range(int(flyingKnots/1.2))
+        ]
+        flyingUpPhase2 = [
             self.createSwingFootModel(
                 timeStep, [],
                 comTask = np.array([jumpLength[0], jumpLength[1], jumpLength[2]+jumpHeight]) * (k + 1) / flyingKnots+ comRef)
-                for k in range(flyingKnots)
+                for k in range(flyingKnots-int(flyingKnots/1.2))
         ]
+
         flyingDownPhase = []
         for k in range(flyingKnots):
             flyingDownPhase += [self.createSwingFootModel(timeStep, [])]
@@ -74,20 +81,21 @@ class SimpleMonopedProblem:
 
         footTask = [[self.FootId, pinocchio.SE3(np.eye(3), FootPos0)]]
         landingPhase = [
-            self.createFootSwitchModel([ self.FootId], footTask)
+            self.createFootSwitchModel([ self.FootId], footTask,False)
         ]
         f0[2] = df
 
+        # return
         landed = [
             self.createSwingFootModel(timeStep, [ self.FootId],
                                       comTask=comRef) for k in range(groundKnots)
         ]
         loco3dModel += takeOff
-
         loco3dModel += flyingUpPhase
-        loco3dModel += flyingDownPhase
-        loco3dModel += landingPhase
-        loco3dModel += landed
+        loco3dModel += flyingUpPhase2 
+        # loco3dModel += flyingDownPhase
+        # loco3dModel += landingPhase
+        # loco3dModel += landed
 
         problem = crocoddyl.ShootingProblem(x0, loco3dModel, loco3dModel[-1])
         return problem
@@ -144,9 +152,9 @@ class SimpleMonopedProblem:
                 costModel.addCost(self.rmodel.frames[i[0]].name + "_footTrack", footTrack, 1e5)
 
         # stateWeights = np.array([0.] * 3 + [500.] * 3 + [0.01] * (self.rmodel.nv - 6) + [10.] * 6 + [1.] *
-        #                         (self.rmodel.nv - 6) + [1e0]*self.state.nv_m+ [1e-1]*self.state.nv_m)
-        stateWeights = np.array([0.]   + [0.01] * (self.rmodel.nv - 1) + [10.] * 1 + [1] *
-                                (self.rmodel.nv - 1) + [1e0]*self.state.nv_m+ [1e0]*self.state.nv_m)
+        #                         (self.rmodel.nv - 6) + [1e0]*self.state.nv+ [1e-1]*self.state.nv)
+        stateWeights = np.array([0.]   + [1] * (self.rmodel.nv - 1) + [1.] * 1 + [1.] *
+                                (self.rmodel.nv - 1) )
         stateResidual = crocoddyl.ResidualModelState(self.state, self.rmodel.defaultState, nu)
         stateActivation = crocoddyl.ActivationModelWeightedQuad(stateWeights**2)
         ctrlWeights = np.array( [1e0] * nu )
@@ -154,7 +162,7 @@ class SimpleMonopedProblem:
         ctrlActivation = crocoddyl.ActivationModelWeightedQuad(ctrlWeights**2)
         stateReg = crocoddyl.CostModelResidual(self.state, stateActivation, stateResidual)
         ctrlReg = crocoddyl.CostModelResidual(self.state, ctrlActivation, ctrlResidual)
-        costModel.addCost("stateReg", stateReg, 1e1)
+        costModel.addCost("stateReg", stateReg, 1e0)
         costModel.addCost("ctrlReg", ctrlReg, 1e-1)
 
         # lb = np.concatenate([self.state.lb[1:self.state.nv + 1], self.state.lb[-self.state.nv:]])
@@ -166,8 +174,8 @@ class SimpleMonopedProblem:
 
         # Creating the action model for the KKT dynamics with simpletic Euler
         # integration scheme
-        dmodel = aslr_to.DifferentialContactASLRFwdDynModel(self.state, self.actuation, contactModel, costModel, self.K, self.B)
-        # print(dmodel.nu)
+        dmodel = crocoddyl.DifferentialActionModelContactFwdDynamics(self.state, self.actuation, contactModel,
+                                                                     costModel, 0., True)
         model = crocoddyl.IntegratedActionModelEuler(dmodel, timeStep)
         return model
 
@@ -210,7 +218,7 @@ class SimpleMonopedProblem:
                 costModel.addCost(self.rmodel.frames[i[0]].name + "_impulseVel", impulseFootVelCost, 1e7)
 
         stateWeights = np.array([0.]   + [0.01] * (self.rmodel.nv - 1) + [10.] * 1 + [1.] *
-                                (self.rmodel.nv - 1) + [1e0]*self.state.nv_m+ [1e-1]*self.state.nv_m)
+                                (self.rmodel.nv - 1))
         stateResidual = crocoddyl.ResidualModelState(self.state, self.rmodel.defaultState, nu)
         stateActivation = crocoddyl.ActivationModelWeightedQuad(stateWeights**2)
         ctrlWeights = np.array( [1e0] * nu )
@@ -221,7 +229,7 @@ class SimpleMonopedProblem:
         costModel.addCost("stateReg", stateReg, 1e1)
         costModel.addCost("ctrlReg", ctrlReg, 1e-3)
 
-        # lb = np.concatenate([self.state.lb[1:self.state.nv + 1], self.state.lb[-self.state.3.03778e-01nv:]])
+        # lb = np.concatenate([self.state.lb[1:self.state.nv + 1], self.state.lb[-self.state.nv:]])
         # ub = np.concatenate([self.state.ub[1:self.state.nv + 1], self.state.ub[-self.state.nv:]])
         # stateBoundsResidual = crocoddyl.ResidualModelState(self.state, nu)
         # stateBoundsActivation = crocoddyl.ActivationModelQuadraticBarrier(crocoddyl.ActivationBounds(lb, ub))
@@ -230,11 +238,12 @@ class SimpleMonopedProblem:
 
         # Creating the action model for the KKT dynamics with simpletic Euler
         # integration scheme
-        dmodel = aslr_to.DifferentialContactASLRFwdDynModel(self.state, self.actuation, contactModel, costModel, self.K, self.B)
+        dmodel = crocoddyl.DifferentialActionModelContactFwdDynamics(self.state, self.actuation, contactModel,
+                                                                     costModel, 0., True)
+        # dmodel = aslr_to.DifferentialContactASLRFwdDynModel(self.state, self.actuation, contactModel, costModel, self.K, self.B)
         # print(dmodel.nu)
         model = crocoddyl.IntegratedActionModelEuler(dmodel, 0.)
         return model
-
     def createImpulseModel(self, supportFootIds, swingFootTask, JMinvJt_damping=1e-12, r_coeff=0.0):
         """ Action model for impulse models.
 
@@ -244,12 +253,12 @@ class SimpleMonopedProblem:
         :return impulse action model
         """
         # Creating a 3D multi-contact model, and then including the supporting foot
+        print("hey")
         nu = self.actuation.nu
         impulseModel = crocoddyl.ImpulseModelMultiple(self.state)
         for i in supportFootIds:
             supportContactModel = crocoddyl.ImpulseModel2D(self.state, i)
             impulseModel.addImpulse(self.rmodel.frames[i].name + "_impulse", supportContactModel)
-
         # Creating the cost model for a contact phase
         costModel = crocoddyl.CostModelSum(self.state, 0)
         if swingFootTask is not None:
@@ -259,8 +268,8 @@ class SimpleMonopedProblem:
                 footTrack = crocoddyl.CostModelResidual(self.state, frameTranslationResidual)
                 costModel.addCost(self.rmodel.frames[i[0]].name + "_footTrack", footTrack, 1e7)
 
-        stateWeights = np.array([1.] * 1 + [10] * (self.rmodel.nv - 1) + [10.] * 1 + 
-                                [1.] *(self.rmodel.nv - 1) + [1e0]*2*self.state.nv_m)
+        stateWeights = np.array([0.]   + [0.01] * (self.rmodel.nv - 1) + [10.] * 1 + [1.] *
+                                (self.rmodel.nv - 1)  + [1e0]*2*self.state.nv_m)
         stateResidual = crocoddyl.ResidualModelState(self.state, self.rmodel.defaultState,0)
         stateActivation = crocoddyl.ActivationModelWeightedQuad(stateWeights**2)
         stateReg = crocoddyl.CostModelResidual(self.state, stateActivation, stateResidual)

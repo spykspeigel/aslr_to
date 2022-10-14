@@ -61,6 +61,8 @@ solver.solve(xs, us, 400)
 log = solver.getCallbacks()[-1]
 
 log1 = solver.getCallbacks()[0]
+print(aslr_to.u_squared(solver.us))
+
 # rd=solver.problem.runningDatas.tolist()
 # print(rd[0].differential.multibody.pinocchio.oMf[anymal.model.getFrameId(
 #     lfFoot)].translation.T)

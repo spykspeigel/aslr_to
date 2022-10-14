@@ -20,22 +20,6 @@ anymal = example_robot_data.load("softleg")
 # Defining the initial state of the robot
 # q0 = anymal.model.referenceConfigurations["standing"].copy()
 q0 = anymal.q0
-# OPTION 1 Select the angle of the first joint wrt vertical
-angle = np.pi/4
-# q0[0] = 1 * np.cos(angle)
-# q0[1] = -np.pi + angle
-# q0[2] = -.1 * angle
-
-# OPTION 2 Initial configuration distributing the joints in a semicircle with foot in O (scalable if n_joints > 2)
-q0[0] = 0.37
-q0[1] = -np.pi/3
-q0[2] = -np.pi/3
-
-# OPTION 3 Solo, (the convention used has negative displacements)
-# q0[0] = 0.16 / np.sin(np.pi/(2 * 2))
-# q0[1] = np.pi/4
-# q0[2] = -np.pi/2
-
 v0 = pinocchio.utils.zero(anymal.model.nv)
 x0 = np.concatenate([q0, v0, np.zeros(4)])
 
@@ -44,9 +28,9 @@ rhFoot =  "softleg_1_contact_link"
 
 gait = SimpleMonopedProblem(anymal.model,  rhFoot)
 
-timeStep = 1e-3
-numKnots =1000
-comGoTo = -1
+timeStep = 1e-2
+numKnots =50
+comGoTo = 0.25
 
 solver = crocoddyl.SolverFDDP(gait.createCoMGoalProblem(x0, comGoTo, timeStep, numKnots))
 solver.problem.nthreads = 1
@@ -82,11 +66,11 @@ solver.solve(xs, us, 100)
 #     lfFoot)].translation.T)
 # print(solver.problem.terminalData.differential.multibody.pinocchio.oMf[anymal.model.getFrameId(
 #     rhFoot)].translation.T)
-if WITHDISPLAY:
-    display = inv_dyn.GepettoDisplayCustom(anymal, frameNames=[ rhFoot])
-    while True:
-        display.displayFromSolver(solver)
-        time.sleep(2.0)
+# if WITHDISPLAY:
+#     display = inv_dyn.GepettoDisplayCustom(anymal, frameNames=[ rhFoot])
+#     while True:
+#         display.displayFromSolver(solver)
+#         time.sleep(2.0)
 
 # if WITHPLOT:
 #     log = solver.getCallbacks()[0]
