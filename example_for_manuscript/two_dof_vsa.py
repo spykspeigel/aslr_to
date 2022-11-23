@@ -17,9 +17,9 @@ robot_model.gravity.linear = np.array([9.81,0,0])
 state = aslr_to.StateMultibodyASR(robot_model)
 actuation = aslr_to.VSAASRActuation(state)
 nu = 2*actuation.nu
-
+target = np.array([.01, .2, .18])
 framePlacementResidual = aslr_to.ResidualModelFramePlacementASR(state, robot_model.getFrameId("EE"),
-                                                               pinocchio.SE3(np.eye(3), np.array([.01, .2, .18])), nu)
+                                                               pinocchio.SE3(np.eye(3), target), nu)
 
 goalTrackingCost = crocoddyl.CostModelResidual(state, framePlacementResidual)
 
@@ -30,6 +30,12 @@ uActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e0]+[1e0] + [1e0]
 uResidual = crocoddyl.ResidualModelControl(state, nu)
 uRegCost = crocoddyl.CostModelResidual(state, uActivation,uResidual)
 
+
+
+xtermActivation = crocoddyl.ActivationModelWeightedQuad(np.array([0] * 2 + [0] * 2 + [1e0] * robot_model.nv + [1e0] * robot_model.nv))
+xtermResidual = crocoddyl.ResidualModelState(state, state.zero(), nu)
+xtermCost = crocoddyl.CostModelResidual(state, xActivation, xResidual)
+
 lamda = 10
 Kref = 0.001*np.ones(int(nu/2))
 vsaCost = aslr_to.CostModelStiffness(state, nu, lamda,Kref)
@@ -38,16 +44,16 @@ runningCostModel = crocoddyl.CostModelSum(state,nu)
 terminalCostModel = crocoddyl.CostModelSum(state,nu)
 
 # Then let's added the running and terminal cost functions
-runningCostModel.addCost("gripperPose", goalTrackingCost, 1e-1)
-runningCostModel.addCost("xReg", xRegCost, 1e-2)
-runningCostModel.addCost("uReg", uRegCost, 1e-3)
+runningCostModel.addCost("gripperPose", goalTrackingCost, 1e0)
+runningCostModel.addCost("xReg", xRegCost, 1e-1)
+runningCostModel.addCost("uReg", uRegCost, 5e-3)
 # runningCostModel.addCost("vsa", vsaCost, 1e-2)
 terminalCostModel.addCost("gripperPose", goalTrackingCost, 4e4)
-terminalCostModel.addCost("xReg", xRegCost, 1e-2)
+# terminalCostModel.addCost("xReg", xtermCost, 1e-3)
 
 B = .001*np.eye(int(state.nv/2))
 
-dt = 5e-3
+dt = 1e-2
 runningModel = aslr_to.IntegratedActionModelEulerASR(
     aslr_to.DifferentialFreeFwdDynamicsModelVSA(state, actuation, runningCostModel,B), dt)
 terminalModel = aslr_to.IntegratedActionModelEulerASR(
@@ -69,6 +75,10 @@ cameraTF = [2., 2.68, 0.54, 0.2, 0.62, 0.72, 0.22]
 
 if WITHDISPLAY:
     display = crocoddyl.GepettoDisplay(two_dof)
+    display.robot.viewer.gui.addSphere('world/point', .05, [1., 0., 0., 1.])  # radius = .1, RGBA=1001
+    display.robot.viewer.gui.applyConfiguration('world/point',
+                                                target.tolist() + [0., 0., 0., 1.])  # xyz+quaternion
+    display.robot.viewer.gui.refresh()
 
 solver.setCallbacks([crocoddyl.CallbackLogger(), crocoddyl.CallbackVerbose() ])
 
@@ -144,12 +154,7 @@ K=solver.K.tolist()
 K_temp = []
 for i in range(len(K)):
     K_temp.append(np.linalg.norm(K[i]))
-# K[-1] = int(K_temp[-2]/K_temp[-3])*K[-2]
-# K[-2] = K[-3]
-# K[-1] = K[-2]
-K_temp = []
-for i in range(len(K)):
-    K_temp.append(np.linalg.norm(K[i]))
+
 
 plt.plot(K_temp)
 plt.show()

@@ -1,7 +1,8 @@
 from .statemultibody_aslr import (StateMultibodyASR)
 from .contact_fwddyn import (DifferentialContactASLRFwdDynModel, DifferentialContactASLRFwdDynData)
-from .free_fwddyn_asr import (DifferentialFreeASRFwdDynamicsModel,DifferentialFreeASRFwdDynamicsData)
+from .free_fwddyn_asr import (DifferentialFreeASRFwdDynamicsModel, DifferentialFreeASRFwdDynamicsData)
 from .free_fwddyn_vsa import (DifferentialFreeFwdDynamicsModelVSA, DifferentialFreeFwdDynamicsDataVSA)
+from .numdiff_dam_asr import (NumDiffASRFwdDynamicsModel, NumDiffASRFwdDynamicsData)
 from .free_fwddyn_fishing_2 import (DAM2, DAD2)
 from .free_fwddyn_vsa_qb import (DifferentialFreeFwdDynamicsModelQb, DifferentialFreeFwdDynamicsDataQb)
 from .residual_frame_placement import (ResidualModelFramePlacementASR,ResidualDataFramePlacementASR)
@@ -86,7 +87,6 @@ def plotrigidOCSolution(xs=None, us=None, figIndex=1, show=True, figTitle=""):
     if xs is not None:
         xsPlotIdx = 111
         nx = int(xs[0].shape[0]/2)
-        print(nx)
         X = [0.] * nx
         for i in range(nx):
             X[i] = [np.asscalar(x[i]) for x in xs]
@@ -130,8 +130,7 @@ def plotSEAOCSolution(xs=None, us=None, figIndex=1, show=True, figTitle=""):
     # Getting the state and control trajectories
     if xs is not None:
         xsPlotIdx = 111
-        nx = int(xs[0].shape[0]/4)
-        print(nx)
+        nx = int(xs[0].shape[0])
         X = [0.] * nx
         for i in range(nx):
             X[i] = [np.asscalar(x[i]) for x in xs]
@@ -175,29 +174,31 @@ def plotOCSolution(xs=None, us=None, stiffness= False, figIndex=1, show=True, fi
     # Getting the state and control trajectories
     if xs is not None:
         xsPlotIdx = 111
-        nx = int(xs[0].shape[0]/4)
+        nx = int(xs[0].shape[0]/2)
         print(nx)
         X = [0.] * nx
-        for i in range(nx):
-            X[i] = [np.asscalar(x[i]) for x in xs]
+        for i in range(nx, 2*nx-1):
+            print(i)
+            X[i-nx] = [np.asscalar(x[i]) for x in xs]
+
     if us is not None:
         usPlotIdx = 111
-        nu = int(us[0].shape[0]/2)
+        nu = int(us[0].shape[0])
         U = [0.] * nu
         for i in range(nu):
             U[i] = [np.asscalar(u[i]) if u.shape[0] != 0 else 0 for u in us]
     if xs is not None and us is not None:
         xsPlotIdx = 211
         usPlotIdx = 212
-    plt.figure(figIndex)
-    if stiffness:
-        xsPlotIdx = 311
-        usPlotIdx = 312
-        stiffPlotIdx = 313
+    # plt.figure(figIndex)
+    # if stiffness:
+    #     xsPlotIdx = 311
+    #     usPlotIdx = 312
+    #     stiffPlotIdx = 313
     # # Plotting the state trajectories
     if xs is not None:
         plt.subplot(xsPlotIdx)
-        [plt.plot(X[i], label="q" + str(i)) for i in range(nx)]
+        [plt.plot(X[i-nx], label="q" + str(i)) for i in range(nx, 2*nx)]
         plt.ylabel("Joint Positions [rad]")
         plt.xlabel("Knots")
         plt.legend()
@@ -211,20 +212,20 @@ def plotOCSolution(xs=None, us=None, stiffness= False, figIndex=1, show=True, fi
         plt.legend()
         plt.xlabel("knots")
 
-    if (stiffness):
-        nu = int(us[0].shape[0])
-        U = [0.] * nu
-        for i in range(int(nu/2),nu):
-            U[i] = [np.asscalar(u[i]) if u.shape[0] != 0 else 0 for u in us]
+    # if (stiffness):
+    #     nu = int(us[0].shape[0])
+    #     U = [0.] * nu
+    #     for i in range(int(nu/2),nu):
+    #         U[i] = [np.asscalar(u[i]) if u.shape[0] != 0 else 0 for u in us]
 
 
-        plt.subplot(stiffPlotIdx)
-        [plt.plot(U[i], label="K" + str(i-2)) for i in range(int(nu/2),nu)]
-        plt.legend()
+        # plt.subplot(stiffPlotIdx)
+        # [plt.plot(U[i], label="K" + str(i-2)) for i in range(int(nu/2),nu)]
+        # plt.legend()
         
-        plt.xlabel("knots")
-        plt.ylabel( "Stiffness [Nm/rad]")
-        plt.title('', fontsize=14)
+        # plt.xlabel("knots")
+        # plt.ylabel( "Stiffness [Nm/rad]")
+        # plt.title('', fontsize=14)
 
     if show:
         plt.show()

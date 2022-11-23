@@ -11,28 +11,28 @@ import matplotlib.pyplot as plt
 WITHDISPLAY = 'display' in sys.argv or 'CROCODDYL_DISPLAY' in os.environ
 WITHPLOT = 'plot' in sys.argv or 'CROCODDYL_PLOT' in os.environ
 
-four_dof = example_robot_data.load('four_dof')
+four_dof = example_robot_data.load('three_dof')
 robot_model = four_dof.model
-robot_model.gravity.linear = np.array([9.81,0,0])
+
 state = aslr_to.StateMultibodyASR(robot_model)
 # actuation = aslr_to.ActuationModelDoublePendulum(state, actLink=0, nu=4)
 actuation = aslr_to.VSAASRActuation(state)
 
 nu = 2*actuation.nu
 
-target = np.array([.15, .3, .15])
+target = np.array([.15, .24, .18])
 framePlacementResidual = aslr_to.ResidualModelFramePlacementASR(state, robot_model.getFrameId("EE"),
                                                                pinocchio.SE3(np.eye(3), target), nu)
 
 goalTrackingCost = crocoddyl.CostModelResidual(state, framePlacementResidual)
 
-xActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e0] *4 + [1e0] *4 + [1e1] * robot_model.nv + [1e1]* robot_model.nv))
+xActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e0] *3 + [1e0] *3 + [1e0] * robot_model.nv + [1e0]* robot_model.nv))
 xResidual = crocoddyl.ResidualModelState(state, state.zero(), nu)
 xRegCost = crocoddyl.CostModelResidual(state, xActivation, xResidual)
-uActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e0]*4 + [1e0] * 4 ))
+uActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e0]*3 + [1e-1] * 3 ))
 uResidual = crocoddyl.ResidualModelControl(state, nu)
 uRegCost = crocoddyl.CostModelResidual(state, uActivation,uResidual)
-xtermActivation = crocoddyl.ActivationModelWeightedQuad(np.array([0] * 4 + [0] * 4 + [1e0] * robot_model.nv + [1e0] * robot_model.nv))
+xtermActivation = crocoddyl.ActivationModelWeightedQuad(np.array([0] * 3 + [0] * 3 + [1e0] * robot_model.nv + [1e0] * robot_model.nv))
 xtermResidual = crocoddyl.ResidualModelState(state, state.zero(), nu)
 xtermCost = crocoddyl.CostModelResidual(state, xActivation, xResidual)
 
@@ -44,13 +44,13 @@ runningCostModel = crocoddyl.CostModelSum(state,nu)
 terminalCostModel = crocoddyl.CostModelSum(state,nu)
 
 # Then let's added the running and terminal cost functions
-runningCostModel.addCost("gripperPose", goalTrackingCost, 1e0)
-runningCostModel.addCost("xReg", xRegCost, 1e0)
-runningCostModel.addCost("uReg", uRegCost, 1e-3)
+runningCostModel.addCost("gripperPose", goalTrackingCost, 1e-1)
+runningCostModel.addCost("xReg", xRegCost, 1e-3)
+runningCostModel.addCost("uReg", uRegCost, 1e-1)
 # runningCostModel.addCost("vsa", vsaCost, 1e-2)
-terminalCostModel.addCost("gripperPose", goalTrackingCost, 4e4)
+terminalCostModel.addCost("gripperPose", goalTrackingCost, 1e3)
 # terminalCostModel.addCost("xReg", xRegCost, 1e1)
-terminalCostModel.addCost("termVel", xtermCost, 1e0)
+# terminalCostModel.addCost("termVel", xtermCost, 1e0)
 
 B = .001*np.eye(int(state.nv/2))
 
@@ -61,18 +61,19 @@ terminalModel = aslr_to.IntegratedActionModelEulerASR(
     aslr_to.DifferentialFreeFwdDynamicsModelVSA(state, actuation, terminalCostModel,B), 0)
 
 l_lim_0=0
-runningModel.u_lb = np.array([ -100, -100,-100,-100, 3, 3, 3, 3])
-runningModel.u_ub = np.array([ 100,  100, 100,100, 10,10,10,10])
-T = 200
+runningModel.u_lb = np.array([ -100, -100,-100, .05,.05,0.05])
+runningModel.u_ub = np.array([ 100,  100, 100,100,100,100])
+T = 400
 
-q0 = np.array([.0,.0,0,0])
-x0 = np.concatenate([q0,np.zeros(4),pinocchio.utils.zero(state.nv)])
+q0 = np.array([.0,.0,0])
+x0 = np.concatenate([q0,np.zeros(3),pinocchio.utils.zero(state.nv)])
 
 problem = crocoddyl.ShootingProblem(x0, [runningModel] * T, terminalModel)
 
 # Creating the DDP solver for this OC problem, defining a logger
 solver = crocoddyl.SolverBoxFDDP(problem)
 cameraTF = [2., 2.68, 0.54, 0.2, 0.62, 0.72, 0.22]
+
 
 if WITHDISPLAY:
     display = crocoddyl.GepettoDisplay(four_dof)
@@ -87,7 +88,7 @@ xs = [x0] * (solver.problem.T + 1)
 us = solver.problem.quasiStatic([x0] * solver.problem.T)
 solver.th_stop = 1e-5
 # Solving it with the DDP algorithm
-solver.solve([], [], 400)
+solver.solve([], [], 250)
 
 print('Finally reached = ', solver.problem.terminalData.differential.multibody.pinocchio.oMf[robot_model.getFrameId(
     "EE")].translation.T)
@@ -118,69 +119,53 @@ u3=np.array([])
 u4=np.array([])
 u5=np.array([])
 u6=np.array([])
-u7=np.array([])
-u8=np.array([])
 
 
 q1=np.array([])
 q2=np.array([])
 q3=np.array([])
-q4=np.array([])
-
 qm1=np.array([])
 qm2=np.array([])
 qm3=np.array([])
-qm4=np.array([])
 
 v1=np.array([])
 v2=np.array([])
 v3=np.array([])
-v4=np.array([])
 
 vm1=np.array([])
 vm2=np.array([])
 vm3=np.array([])
-vm4=np.array([])
 
 for i in range(len(log.us)):
     u1 = np.append(u1,log.us[i][0])
     u2 = np.append(u2,log.us[i][1])
     u3 = np.append(u3,log.us[i][2])
     u4 = np.append(u4,log.us[i][3])
-
     u5 = np.append(u5,log.us[i][4])
     u6 = np.append(u6,log.us[i][5])
-    u7 = np.append(u7,log.us[i][6])
-    u8 = np.append(u8,log.us[i][7])
 
 for i in range(len(log.xs)):
     q1 = np.append(q1,log.xs[i][0])
     q2 = np.append(q2,log.xs[i][1])
     q3 = np.append(q3,log.xs[i][2])
-    q4 = np.append(q4,log.xs[i][3])
 
-    qm1 = np.append(qm1,log.xs[i][4])
-    qm2 = np.append(qm2,log.xs[i][5])
-    qm3 = np.append(qm3,log.xs[i][6])
-    qm4 = np.append(qm4,log.xs[i][7])
-
-    v1 = np.append(v1,log.xs[i][8])
-    v2 = np.append(v2,log.xs[i][9])
-    v3 = np.append(v3,log.xs[i][10])
-    v4 = np.append(v4,log.xs[i][11])
-
-    vm1 = np.append(vm1,log.xs[i][12])
-    vm2 = np.append(vm2,log.xs[i][13])
-    vm3 = np.append(vm3,log.xs[i][14])
-    vm4 = np.append(vm4,log.xs[i][15])
+    qm1 = np.append(qm1,log.xs[i][3])
+    qm2 = np.append(qm2,log.xs[i][4])
+    qm3 = np.append(qm3,log.xs[i][5])
+    v1 = np.append(v1,log.xs[i][6])
+    v2 = np.append(v2,log.xs[i][7])
+    v3 = np.append(v3,log.xs[i][8])
+    vm1 = np.append(vm1,log.xs[i][9])
+    vm2 = np.append(vm2,log.xs[i][10])
+    vm3 = np.append(vm3,log.xs[i][11])
 
 
 t=np.arange(0,T*dt,dt)
 
-savemat("optimised_trajectory_vsa.mat", {"q1": q1,"q2":q2, "q3": q3, "q4": q4,"qm1": qm1,"qm2":qm2,"qm3": qm3,"qm4": qm4,"v1": v1,"v2":v2,"v3": v3,"v4": v4,"vm1": vm1,"vm2":vm2,"vm3": vm3, "vm4": vm4,"t":t})
+savemat("optimised_trajectory_vsa.mat", {"q1": q1,"q2":q2, "q3": q3,"qm1": qm1,"qm2":qm2,"qm3": qm3,"v1": v1,"v2":v2,"v3": v3,"vm1": vm1,"vm2":vm2,"vm3": vm3,"t":t})
 
-savemat("controls_vsa.mat", {"u1": u1,"u2":u2,"u3":u3,"u4":u4,"t":t})
-savemat("stiffness_vsa.mat", {"u5": u5,"u6":u6,"u7":u7, "u8":u8,"t":t})
+savemat("controls_vsa.mat", {"u1": u1,"u2":u2,"u3":u3,"t":t})
+savemat("stiffness_vsa.mat", {"u4": u4,"u5":u5,"u6":u6,"t":t})
 
 K=solver.K.tolist()
 K_temp = []

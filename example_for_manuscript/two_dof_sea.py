@@ -165,3 +165,6 @@ for i in range(len(K)):
 plt.plot(K_temp)
 plt.show()
 savemat("fb.mat", {"K":K,"t":t})
+if WITHPLOT:
+    log = solver.getCallbacks()[0]
+    aslr_to.plotOCSolution(log.xs,log.us,figIndex=1, show=True)
