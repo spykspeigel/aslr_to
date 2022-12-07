@@ -58,6 +58,8 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         tau = data.multibody.actuation.tau
 
         JMinvJt_damping_=0.
+        # print("--")
+        # print(data.multibody.contacts.Jc[:nc,:nv_l])
         pinocchio.forwardDynamics(self.state.pinocchio, data.multibody.pinocchio, -tau_couple, data.multibody.contacts.Jc[:nc,:nv_l],
                         data.multibody.contacts.a0, JMinvJt_damping_)
         data.xout[:nv_l] = data.multibody.pinocchio.ddq
@@ -97,9 +99,9 @@ class DifferentialContactASLRFwdDynModel(crocoddyl.DifferentialActionModelAbstra
         data.Fx[:nv_l,:nv_l] = -np.dot(a_partial_dtau, data.multibody.pinocchio.dtau_dq + self.K[:,-nv_l:])
         data.Fx[:nv_l,nv_l:2*nv_l] = -np.dot(a_partial_dtau, data.multibody.pinocchio.dtau_dv)
         data.Fx[:nv_l,2*nv_l:-nv_m] = np.dot(a_partial_dtau,self.K[:,-self.state.nv_m:])
+        
         if nc!=0:
             data.Fx[:nv_l,:2*nv_l] -=   np.dot(a_partial_da, data.multibody.contacts.da0_dx[:nc,:2*nv_l])
-
         #Jacobian for the motor side coordinates  i.e. \dot\dot{\theta}
         data.Fx[nv_l:, :nv_l] = np.dot(data.Binv,self.K[-self.actuation.nu:,-nv_l:])
         data.Fx[nv_l:, 2*nv_l:-nv_m] = -np.dot(data.Binv,self.K[-self.actuation.nu:, -self.actuation.nu:])

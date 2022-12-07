@@ -14,6 +14,8 @@ SET(${PROJECT_NAME}_PYTHON_FILES
   softmodel_data.py
   datacollector_softmodel_multibody.py
   contact_fwddyn_new.py
+  actuation_softleg.py
+  actuation_rigidleg.py
   )
 
 FOREACH(python ${${PROJECT_NAME}_PYTHON_FILES})

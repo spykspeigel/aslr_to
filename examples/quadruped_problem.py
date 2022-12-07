@@ -11,9 +11,9 @@ class SimpleQuadrupedalGaitProblem:
         self.state = crocoddyl.StateSoftMultibody(self.rmodel)
         self.K = np.zeros([self.state.pinocchio.nv,self.state.pinocchio.nq])
         nu = self.state.nv_m
-        self.K[-nu:,-nu:]= 10*np.eye(nu)
+        self.K[-nu:,-nu:]= 5*np.eye(nu)
         self.B = .001*np.eye(self.state.nv_m)
-        self.actuation = aslr_to.ASRFreeFloatingActuation(self.state,12)
+        self.actuation = aslr_to.ASRFreeFloatingActuation(self.state)
 
         # Getting the frame id for all the legs
         self.lfFootId = self.rmodel.getFrameId(lfFoot)

@@ -9,38 +9,43 @@ import pinocchio
 import aslr_to
 import inv_dyn
 from aslr_to import u_squared
-from quadruped_problem import SimpleQuadrupedalGaitProblem
+from soft_leg_problem import SimpleMonopedProblem
 
 WITHDISPLAY = "display" in sys.argv or "CROCODDYL_DISPLAY" in os.environ
 WITHPLOT = "plot" in sys.argv or "CROCODDYL_PLOT" in os.environ
 
-# Loading the anymal model
-anymal = example_robot_data.load("anymal")
+# Loading the softleg model
+softleg = example_robot_data.load("softleg")
 
 # Defining the initial state of the robot
-q0 = anymal.model.referenceConfigurations["standing"].copy()
-v0 = pinocchio.utils.zero(anymal.model.nv)
-x0 = np.concatenate([q0, v0, np.zeros(24)])
+q0 = softleg.q0
+# OPTION 1 Select the angle of the first joint wrt vertical
+angle = np.pi/4
+# q0[0] = 1 * np.cos(angle)
+# q0[1] = -np.pi + angle
+# q0[2] = -.1 * angle
+
+# OPTION 2 Initial configuration distributing the joints in a semicircle with foot in O (scalable if n_joints > 2)
+q0[0] = 0.26    
+q0[1] = -np.pi/3
+q0[2] = -np.pi/2
+
+v0 = pinocchio.utils.zero(softleg.model.nv)
+x0 = np.concatenate([q0, v0, np.zeros(4)])
 
 # Setting up the 3d walking problem
-lfFoot, rfFoot, lhFoot, rhFoot = "LF_FOOT", "RF_FOOT", "LH_FOOT", "RH_FOOT"
-gait = SimpleQuadrupedalGaitProblem(anymal.model, lfFoot, rfFoot, lhFoot, rhFoot)
+rhFoot =  "softleg_1_contact_link"
+gait = SimpleMonopedProblem(softleg.model,  rhFoot)
 
 # Defining the walking gait parameters
 jumping_gait = {
-        'jumpHeight': 0.15,
-        'jumpLength': [0.0, 0.3, 0.],
+        'jumpHeight': 1,
+        'jumpLength': [0.0, 0, .0],
         'timeStep': 1e-3,
-        'groundKnots': 100,
+        'groundKnots': 1000,
         'flyingKnots': 200
 }
-# trotting_gait = {
-#         'stepLength': 0.15,
-#         'stepHeight': 0.1,
-#         'timeStep': 1e-2,
-#         'stepKnots': 25,
-#         'supportKnots': 2
-#     }
+
 # Setting up the control-limited DDP solver
 solver = crocoddyl.SolverFDDP(
     gait.createJumpingProblem(x0, jumping_gait['jumpHeight'], jumping_gait['jumpLength'], jumping_gait['timeStep'],
@@ -53,20 +58,20 @@ solver = crocoddyl.SolverFDDP(
 solver.problem.nthreads = 1
 cameraTF = [2.0, 2.68, 0.84, 0.2, 0.62, 0.72, 0.22]
 if WITHDISPLAY and WITHPLOT:
-    display = aslr_to.GepettoDisplay(anymal, 4, 4, cameraTF, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])
+    display = crocoddyl.GepettoDisplay(softleg, 1, 1, cameraTF, frameNames=[rhFoot])
     solver.setCallbacks([
         crocoddyl.CallbackLogger(),
         crocoddyl.CallbackVerbose(),
-        crocoddyl.CallbackDisplay(display)
+        crocoddyl.CallbackDisplay(display),
     ])
 elif WITHDISPLAY:
-    display = aslr_to.GepettoDisplay(anymal, 4, 4, cameraTF, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])
-    solver.setCallbacks([crocoddyl.CallbackVerbose(), aslr_to.CallbackDisplay(display)])
+    display = crocoddyl.GepettoDisplay(softleg, 1, 1, cameraTF, frameNames=[rhFoot])
+    solver.setCallbacks([crocoddyl.CallbackVerbose(), crocoddyl.CallbackDisplay(display)])
 elif WITHPLOT:
     solver.setCallbacks([crocoddyl.CallbackLogger(), crocoddyl.CallbackVerbose()])
 else:
-    solver.setCallbacks([crocoddyl.CallbackLogger(),crocoddyl.CallbackVerbose()])
-solver.th_stop = 1e-5
+    solver.setCallbacks([crocoddyl.CallbackVerbose()])
+solver.th_stop = 1e-3
 
 xs = [x0] * (solver.problem.T + 1)
 us = solver.problem.quasiStatic([x0] * solver.problem.T)
@@ -74,20 +79,20 @@ us = solver.problem.quasiStatic([x0] * solver.problem.T)
 
 solver.solve(xs, us, 100)
 log = solver.getCallbacks()[-1]
+if WITHPLOT:
+    print("hey")
+    log = solver.getCallbacks()[0]
+    aslr_to.plotSEAOCSolution(log.xs ,log.us,figIndex=1, show=True)
 
 log1 = solver.getCallbacks()[0]
-# rd=solver.problem.runningDatas.tolist()
-# print(rd[0].differential.multibody.pinocchio.oMf[anymal.model.getFrameId(
-#     lfFoot)].translation.T)
-# print(solver.problem.terminalData.differential.multibody.pinocchio.oMf[anymal.model.getFrameId(
-#     lfFoot)].translation.T)
+rd=solver.problem.runningDatas.tolist()
+a=jumping_gait['groundKnots']+ jumping_gait['flyingKnots']
+print(rd[a-2].differential.multibody.pinocchio.oMf[softleg.model.getFrameId(
+    rhFoot)].translation.T)
+print(solver.problem.terminalData.differential.multibody.pinocchio.oMf[softleg.model.getFrameId(
+    rhFoot)].translation.T)
 if WITHDISPLAY:
-    display = aslr_to.GepettoDisplay(anymal, frameNames=[lfFoot, rfFoot, lhFoot, rhFoot])
+    display = aslr_to.GepettoDisplay(softleg, frameNames=[ rhFoot])
     while True:
         display.displayFromSolver(solver)
         time.sleep(2.0)
-print(np.sum(u_squared(log1)))
-
-if WITHPLOT:
-    log = solver.getCallbacks()[0]
-    aslr_to.plotSEAOCSolution(log.xs ,log.us,figIndex=1, show=True)
