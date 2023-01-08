@@ -5,7 +5,11 @@ import crocoddyl
 
 class NumDiffASRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbstract):
     def __init__(self, model, disturbance):
-        crocoddyl.DifferentialActionModelAbstract.__init__(self, model.state, model.actuation.nu, model.costs.nr)
+        # try:
+        #     if model.actuation is not None:
+        #         crocoddyl.DifferentialActionModelAbstract.__init__(self, model.state, model.actuation.nu, model.costs.nr)
+        # except:
+        crocoddyl.DifferentialActionModelAbstract.__init__(self, model.state, model.nu, model.nr)
         self.model = model
         self.disturbance = disturbance
         # if K is None:
@@ -21,7 +25,11 @@ class NumDiffASRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbstract):
 
         self.model.calc(data.data_0,  x, u)
         # Computing the motor side dynamics
-        data.cost = data.data_0.costs.cost
+        try:
+            data.cost = data.data_0.costs.cost
+        except:
+            data.cost = data.data_0.cost
+
         data.xout = data.data_0.xout
 
     def calcDiff(self, data, x, u=None):
@@ -63,38 +71,38 @@ class NumDiffASRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbstract):
                 self.model.calc(data.data_nd_x,  x_pp, u)
                 c_pp = data.data_nd_x.cost  
                 
-                dx[i] = 0
+                # dx[i] = 0
 
-                x_pp = self.model.state.integrate(x,dx) # x = x + dx_i +dx_j
-                # x_pp = x + dx
-                data.data_nd_x = self.model.createData()
-                self.model.calc(data.data_nd_x,  x_pp, u)
-                c_np = data.data_nd_x.cost
+                # x_pp = self.model.state.integrate(x,dx) # x = x + dx_i +dx_j
+                # # x_pp = x + dx
+                # data.data_nd_x = self.model.createData()
+                # self.model.calc(data.data_nd_x,  x_pp, u)
+                # c_np = data.data_nd_x.cost
                 
-            #     dx[i] = -disturbance
-            #     dx[j] = disturbance
-            #     x_np = self.model.state.integrate(x,dx) # x = x - dx_i +dx_j
-            #     # x_np = x + dx
-            #     data.data_nd_x = self.model.createData()
-            #     self.model.calc(data.data_nd_x,  x_np, u)
-            #     c_np = data.data_nd_x.cost
+                dx[i] = -disturbance
+                dx[j] = disturbance
+                x_np = self.model.state.integrate(x,dx) # x = x - dx_i +dx_j
+                # x_np = x + dx
+                data.data_nd_x = self.model.createData()
+                self.model.calc(data.data_nd_x,  x_np, u)
+                c_np = data.data_nd_x.cost
 
-            #     dx[i] = disturbance
-            #     dx[j] = -disturbance
-            #     x_pn = self.model.state.integrate(x,dx) # x = x + dx_i  -dx_j
-            #     # x_pn = x+dx
-            #     data.data_nd_x = self.model.createData()
-            #     self.model.calc(data.data_nd_x,  x_pn, u)
-            #     c_pn = data.data_nd_x.cost
+                dx[i] = disturbance
+                dx[j] = -disturbance
+                x_pn = self.model.state.integrate(x,dx) # x = x + dx_i  -dx_j
+                # x_pn = x+dx
+                data.data_nd_x = self.model.createData()
+                self.model.calc(data.data_nd_x,  x_pn, u)
+                c_pn = data.data_nd_x.cost
 
-            #     dx[i] = -disturbance
-            #     dx[j] = -disturbance
-            #     x_nn = self.model.state.integrate(x,dx) # x = x - dx_i -dx_j
-            #     data.data_nd_x = self.model.createData()
-            #     self.model.calc(data.data_nd_x,  x_nn, u)
-            #     c_nn = data.data_nd_x.cost
-            #     data.Lxx[i,j] = (c_pp - c_np - c_pn + c_nn)/(4* disturbance**2)
-                data.Lxx[i,j] = (c_pp - cp- c_np +c0)/(disturbance**2)
+                dx[i] = -disturbance
+                dx[j] = -disturbance
+                x_nn = self.model.state.integrate(x,dx) # x = x - dx_i -dx_j
+                data.data_nd_x = self.model.createData()
+                self.model.calc(data.data_nd_x,  x_nn, u)
+                c_nn = data.data_nd_x.cost
+                data.Lxx[i,j] = (c_pp - c_np - c_pn + c_nn)/(4* disturbance**2)
+                # data.Lxx[i,j] = (c_pp - cp- c_np +c0)/(disturbance**2)
             
                 data.Lxx[j,i] = data.Lxx[i,j]
                 dx[j] = 0.
@@ -178,11 +186,14 @@ class NumDiffASRFwdDynamicsModel(crocoddyl.DifferentialActionModelAbstract):
 class NumDiffASRFwdDynamicsData(crocoddyl.DifferentialActionDataAbstract):
     def __init__(self, model):
         crocoddyl.DifferentialActionDataAbstract.__init__(self, model)
-        self.pinocchio = pinocchio.Model.createData(model.model.state.pinocchio)
-        self.multibody = crocoddyl.DataCollectorMultibody(self.pinocchio)
-        self.actuation = model.model.actuation.createData()
-        self.costs = model.model.costs.createData(self.multibody)
-        self.costs.shareMemory(self)
+        try:
+            self.pinocchio = pinocchio.Model.createData(model.model.state.pinocchio)
+            self.multibody = crocoddyl.DataCollectorMultibody(self.pinocchio)
+            self.actuation = model.model.actuation.createData()
+            self.costs = model.model.costs.createData(self.multibody)
+            self.costs.shareMemory(self)
+        except:
+            pass
         self.Minv = None
         self.Binv = None
         self.Lxx = np.zeros([model.model.state.ndx,model.model.state.ndx])

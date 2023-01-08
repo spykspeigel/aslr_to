@@ -60,7 +60,7 @@ T = 200
 
 q0 = np.array([0.173046, 1., -0.52366, 0., 0., 0.1, -0.005])
 x0 = np.concatenate([q0, q0,pinocchio.utils.zero(state.nv)])
-print(x0.shape)
+
 problem = crocoddyl.ShootingProblem(x0, [runningModel] * T, terminalModel)
 
 # Creating the DDP solver for this OC problem, defining a logger

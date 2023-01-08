@@ -1,0 +1,13 @@
+under 2dof sea
+avrage iter : 31.1
+std dev: 5.2
+
+under 2dof vsa
+avg iter : 39.9
+std dev: 6.7
+
+under 2dof sea numdiff
+avg iter: 32.6
+std dev: 1.58
+
+under 2dof vsa numdiff

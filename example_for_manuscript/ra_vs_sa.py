@@ -72,6 +72,9 @@ solver.solve()
 
 print('Finally reached = ', solver.problem.runningDatas.tolist()[0].differential.multibody.pinocchio.oMf[robot_model.getFrameId(
     "EE")].translation.T)
+print('Finally reached = ', solver.problem.runningDatas.tolist()[0].differential.multibody.pinocchio.oMf[robot_model.getFrameId(
+    "J1")].translation.T)
+print('Finally reached = ', solver.problem.terminalData.differential.multibody.pinocchio.oMf[robot_model.getFrameId("Link1")].translation.T)
 
 print('Finally reached = ', solver.problem.terminalData.differential.multibody.pinocchio.oMf[robot_model.getFrameId(
     "EE")].translation.T)
@@ -80,81 +83,81 @@ log = solver.getCallbacks()[0]
 aslr_to.plotrigidOCSolution(log.xs,figTitle="Rigid actuated")
 
 
-x1=np.array([])
-x2=np.array([])
+# x1=np.array([])
+# x2=np.array([])
 
-for i in range(len(log.xs)):
-    x1 = np.append(x1,log.xs[i][0])
-    x2 = np.append(x2,log.xs[i][1])
+# for i in range(len(log.xs)):
+#     x1 = np.append(x1,log.xs[i][0])
+#     x2 = np.append(x2,log.xs[i][1])
 
-t=np.arange(0,T*dt,dt)
+# t=np.arange(0,T*dt,dt)
 
-savemat("ra.mat", {"q1": x1,"q2":x2,"t":t})
+# savemat("ra.mat", {"q1": x1,"q2":x2,"t":t})
 
 
 
 #######################################
 ### SOFT MODEL
 ##########################################
-state = aslr_to.StateMultibodyASR(robot_model)
-actuation = aslr_to.ASRActuation(state)
-nu = actuation.nu
+# state = aslr_to.StateMultibodyASR(robot_model)
+# actuation = aslr_to.ASRActuation(state)
+# nu = actuation.nu
 
-runningCostModel = crocoddyl.CostModelSum(state,nu)
-terminalCostModel = crocoddyl.CostModelSum(state,nu)
+# runningCostModel = crocoddyl.CostModelSum(state,nu)
+# terminalCostModel = crocoddyl.CostModelSum(state,nu)
 
-xActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e0] *2 + [0] *2 + [1e0] * robot_model.nv + [0]* robot_model.nv))
-xResidual = crocoddyl.ResidualModelState(state, state.zero(), nu)
-xRegCost = crocoddyl.CostModelResidual(state, xActivation, xResidual)
-uResidual = crocoddyl.ResidualModelControl(state, nu)
-uRegCost = crocoddyl.CostModelResidual(state, uResidual)
-
-framePlacementResidual = aslr_to.ResidualModelFramePlacementASR(state, robot_model.getFrameId("EE"),
-                                                               pinocchio.SE3(np.eye(3), np.array([.01, .2, .18])), nu)
+# xActivation = crocoddyl.ActivationModelWeightedQuad(np.array([1e0] *2 + [0] *2 + [1e0] * robot_model.nv + [0]* robot_model.nv))
+# xResidual = crocoddyl.ResidualModelState(state, state.zero(), nu)
+# xRegCost = crocoddyl.CostModelResidual(state, xActivation, xResidual)
+# uResidual = crocoddyl.ResidualModelControl(state, nu)
+# uRegCost = crocoddyl.CostModelResidual(state, uResidual)
 
 # framePlacementResidual = aslr_to.ResidualModelFramePlacementASR(state, robot_model.getFrameId("EE"),
-#                                                                pinocchio.SE3(np.eye(3), np.array([.01, .2, .18])), nu)                                                        
+#                                                                pinocchio.SE3(np.eye(3), np.array([.01, .2, .18])), nu)
 
-goalTrackingCost = crocoddyl.CostModelResidual(state, framePlacementResidual)
-#xRegCost = crocoddyl.CostModelResidual(state, xResidual)
+# # framePlacementResidual = aslr_to.ResidualModelFramePlacementASR(state, robot_model.getFrameId("EE"),
+# #                                                                pinocchio.SE3(np.eye(3), np.array([.01, .2, .18])), nu)                                                        
 
-# Then let's added the running and terminal cost functions
-runningCostModel.addCost("gripperPose", goalTrackingCost, 1e0)
-runningCostModel.addCost("xReg", xRegCost, 1e0)
-runningCostModel.addCost("uReg", uRegCost, 1e-1)
-terminalCostModel.addCost("gripperPose", goalTrackingCost, 4e4)
+# goalTrackingCost = crocoddyl.CostModelResidual(state, framePlacementResidual)
+# #xRegCost = crocoddyl.CostModelResidual(state, xResidual)
+
+# # Then let's added the running and terminal cost functions
+# runningCostModel.addCost("gripperPose", goalTrackingCost, 1e0)
+# runningCostModel.addCost("xReg", xRegCost, 1e0)
+# runningCostModel.addCost("uReg", uRegCost, 1e-1)
+# terminalCostModel.addCost("gripperPose", goalTrackingCost, 4e4)
 
 
-K =1*np.eye(int(state.nv/2))
-B = .001*np.eye(int(state.nv/2))
+# K =1*np.eye(int(state.nv/2))
+# B = .001*np.eye(int(state.nv/2))
 
-dt = 1e-3
-runningModel = aslr_to.IntegratedActionModelEulerASR(
-    aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, runningCostModel,K,B), dt)
+# dt = 1e-3
+# runningModel = aslr_to.IntegratedActionModelEulerASR(
+#     aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, runningCostModel,K,B), dt)
 
-terminalModel = aslr_to.IntegratedActionModelEulerASR(
-    aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, terminalCostModel,K,B), 0)
+# terminalModel = aslr_to.IntegratedActionModelEulerASR(
+#     aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, terminalCostModel,K,B), 0)
 
-T = 250
+# T = 250
 
-q0 = np.array([.0,0])
-x0 = np.concatenate([q0,q0,pinocchio.utils.zero(state.nv)])
+# q0 = np.array([.0,0])
+# x0 = np.concatenate([q0,q0,pinocchio.utils.zero(state.nv)])
 
-problem = crocoddyl.ShootingProblem(x0, [runningModel] * T, terminalModel)
+# problem = crocoddyl.ShootingProblem(x0, [runningModel] * T, terminalModel)
 
-xs_sa = problem.rollout(log.us)
-print('Finally reached = ', problem.terminalData.differential.multibody.pinocchio.oMf[robot_model.getFrameId(
-    "EE")].translation.T)
+# xs_sa = problem.rollout(log.us)
+# print('Finally reached = ', problem.terminalData.differential.multibody.pinocchio.oMf[robot_model.getFrameId(
+#     "EE")].translation.T)
 
-aslr_to.plotSEAOCSolution(xs_sa,figIndex=1, show=True, figTitle="SEA with stiffness 10 Nm/rad")
+# aslr_to.plotSEAOCSolution(xs_sa,figIndex=1, show=True, figTitle="SEA with stiffness 10 Nm/rad")
 
-x1=np.array([])
-x2=np.array([])
+# x1=np.array([])
+# x2=np.array([])
 
-for i in range(len(log.xs)):
-    x1 = np.append(x1,xs_sa[i][0])
-    x2 = np.append(x2,xs_sa[i][1])
+# for i in range(len(log.xs)):
+#     x1 = np.append(x1,xs_sa[i][0])
+#     x2 = np.append(x2,xs_sa[i][1])
 
-t=np.arange(0,T*dt,dt)
+# t=np.arange(0,T*dt,dt)
 
-savemat("sa_3.mat", {"q1": x1,"q2":x2,"t":t})
+# savemat("sa_3.mat", {"q1": x1,"q2":x2,"t":t})

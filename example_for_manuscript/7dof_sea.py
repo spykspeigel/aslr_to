@@ -33,7 +33,7 @@ target = np.array([.0, .0, .4])
 framePlacementResidual = aslr_to.ResidualModelFramePlacementASR(state, robot_model.getFrameId("gripper_left_joint"),
                                                                pinocchio.SE3(np.eye(3), target), nu)
 goalTrackingCost = crocoddyl.CostModelResidual(state, framePlacementResidual)
-#xRegCost = crocoddyl.CostModelResidual(state, xResidual)
+# xRegCost = crocoddyl.CostModelResidual(state, xResidual)
 
 # Then let's added the running and terminal cost functions
 runningCostModel.addCost("gripperPose", goalTrackingCost, 1e-1)
@@ -41,8 +41,7 @@ runningCostModel.addCost("xReg", xRegCost, 1e-1)
 runningCostModel.addCost("uReg", uRegCost, 1e-2)
 terminalCostModel.addCost("gripperPose", goalTrackingCost, 4e4)
 
-
-K = 10*np.eye(int(state.nv/2))
+K = 50*np.eye(int(state.nv/2))
 B = 1e-3*np.eye(int(state.nv/2))
 
 dt = 1e-2

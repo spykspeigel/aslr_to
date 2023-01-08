@@ -64,7 +64,8 @@ x0 = np.concatenate([q0, pinocchio.utils.zero(robot_model.nv)])
 problem = crocoddyl.ShootingProblem(x0, [runningModel] * T, terminalModel)
 
 # Creating the DDP solver for this OC problem, defining a logger
-solver = crocoddyl.SolverDDP(problem)
+# solver = crocoddyl.SolverDDP(problem)
+solver = aslr_to.SolverINTRO(problem)
 solver.setCallbacks([crocoddyl.CallbackLogger(), crocoddyl.CallbackVerbose() ])
 
 solver.solve([],[],400)

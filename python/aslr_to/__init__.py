@@ -3,6 +3,7 @@ from .contact_fwddyn import (DifferentialContactASLRFwdDynModel, DifferentialCon
 from .free_fwddyn_asr import (DifferentialFreeASRFwdDynamicsModel,DifferentialFreeASRFwdDynamicsData)
 from .free_fwddyn_vsa import (DifferentialFreeFwdDynamicsModelVSA, DifferentialFreeFwdDynamicsDataVSA)
 from .free_fwddyn_fishing_2 import (DAM2, DAD2)
+from .lqr import (DifferentialLQRModel, DifferentialLQRData)
 from .numdiff_dam_asr import (NumDiffASRFwdDynamicsModel,NumDiffASRFwdDynamicsData)
 from .free_fwddyn_vsa_qb import (DifferentialFreeFwdDynamicsModelQb, DifferentialFreeFwdDynamicsDataQb)
 from .residual_frame_placement import (ResidualModelFramePlacementASR,ResidualDataFramePlacementASR)
@@ -17,6 +18,10 @@ from .soft_residual_model import (SoftDynamicsResidualModel,SoftDynamicsResidual
 from .vsa_dynamics_residual import (VSADynamicsResidualModel, VSADynamicsResidualData)
 from .residual_acrobot import (ResidualModelDoublePendulum,ResidualDataDoublePendulum)
 from .solver import DDPASLR
+from .solvers import SolverINTRO
+from .solvers_eq import SolverEQ
+from .constrained_lqr import (ConstrainedDifferentialLQRModel, ConstrainedDifferentialLQRData)
+
 import numpy as np
 import crocoddyl
 import pinocchio

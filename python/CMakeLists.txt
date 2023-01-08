@@ -19,6 +19,10 @@ SET(${PROJECT_NAME}_PYTHON_FILES
   actuation_vsa_qb.py
   actuation_fishing.py
   free_fwddyn_fishing_2.py
+  lqr.py
+  solvers.py
+  solvers_eq.py
+  constrained_lqr.py
   )
 
 FOREACH(python ${${PROJECT_NAME}_PYTHON_FILES})

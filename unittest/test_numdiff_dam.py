@@ -35,7 +35,7 @@ model = aslr_to.DifferentialFreeASRFwdDynamicsModel(state, actuation, costs)
 x =   model.state.rand()
 u = np.random.rand(model.nu)
 data =  model.createData()
-MODEL_ND = aslr_to.NumDiffASRFwdDynamicsModel(model,1e-5)
+MODEL_ND = aslr_to.NumDiffASRFwdDynamicsModel(model,1e-4)
 # MODEL_ND.disturbance *= 10
 DATA_ND = MODEL_ND.createData()
 model.calc(data, x, u)

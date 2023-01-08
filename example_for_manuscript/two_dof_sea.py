@@ -32,8 +32,11 @@ xRegCost = crocoddyl.CostModelResidual(state, xActivation, xResidual)
 uResidual = crocoddyl.ResidualModelControl(state, nu)
 uRegCost = crocoddyl.CostModelResidual(state, uResidual)
 
+target = np.array([.01, .2, .18])
+target = np.array([.1, .2, .18])
+# target = np.array([.1, .1, .18])
 framePlacementResidual = aslr_to.ResidualModelFramePlacementASR(state, robot_model.getFrameId("EE"),
-                                                               pinocchio.SE3(np.eye(3), np.array([.01, .2, .18])), nu)
+                                                               pinocchio.SE3(np.eye(3), target), nu)
 
 # framePlacementResidual = aslr_to.ResidualModelFramePlacementASR(state, robot_model.getFrameId("EE"),
 #                                                                pinocchio.SE3(np.eye(3), np.array([.01, .2, .18])), nu)                                                        
@@ -67,7 +70,8 @@ problem = crocoddyl.ShootingProblem(x0, [runningModel] * T, terminalModel)
 
 # Creating the DDP solver for this OC problem, defining a logger
 # solver = aslr_to.DDPASLR(problem)
-solver = crocoddyl.SolverFDDP(problem)
+# solver = crocoddyl.SolverFDDP(problem)
+solver = aslr_to.SolverINTRO(problem)
 cameraTF = [2., 2.68, 0.54, 0.2, 0.62, 0.72, 0.22]
 
 if WITHDISPLAY:
@@ -111,10 +115,10 @@ if WITHPLOT:
     #crocoddyl.plotConvergence(log.costs, log.u_regs, log.x_regs, log.grads, log.stops, log.steps, figIndex=2)
 
 # # Visualizing the solution in gepetto-viewer
-# if WITHDISPLAY:
-#     while True:
-#         display.displayFromSolver(solver)
-#         time.sleep(2.0)
+if WITHDISPLAY:
+    while True:
+        display.displayFromSolver(solver)
+        time.sleep(2.0)
 
 
 

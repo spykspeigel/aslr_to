@@ -47,7 +47,7 @@ terminalCostModel.addCost("xReg", xRegCost, 1e-2)
 
 B = .001*np.eye(int(state.nv/2))
 
-dt = 5e-3
+dt = 1e-2
 runningModel = aslr_to.IntegratedActionModelEulerASR(
     aslr_to.DifferentialFreeFwdDynamicsModelVSA(state, actuation, runningCostModel,B), dt)
 terminalModel = aslr_to.IntegratedActionModelEulerASR(
@@ -56,7 +56,7 @@ terminalModel = aslr_to.IntegratedActionModelEulerASR(
 l_lim_0=0
 runningModel.u_lb = np.array([ -10, -10, .05, .05])
 runningModel.u_ub = np.array([ 10, 10, 7, 7])
-T = 400
+T = 200
 
 q0 = np.array([.0,.0])
 x0 = np.concatenate([q0,np.zeros(2),pinocchio.utils.zero(state.nv)])
